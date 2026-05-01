@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="fixed-header">
+    <div style="display: flex; align-items: center; gap: 5px;">
+      <span class="header-title">
+        Carol & Marlon
+      </span>
+    </div>
+    <button id="btnRecadoHeader" class="btn-recado-top hidden" onclick="abrirModalRecado()">
+      <i class="fas fa-envelope"></i> Recado para os noivos
+    </button>
+  </header>
+
+  <div id="priceBar" class="price-filter-bar hidden">
+    <select id="sortOrder" onchange="aplicarFiltros()">
+      <option value="none">Ordenar...</option>
+      <option value="asc">Menor Preço</option>
+      <option value="desc">Maior Preço</option>
+    </select>
+    
+    <select id="rangePrice" onchange="aplicarFiltros()">
+      <option value="all">Valores</option>
+      <option value="10-20">R$ 10 - R$ 20</option>
+      <option value="20-30">R$ 20 - R$ 30</option>
+      <option value="30-40">R$ 30 - R$ 40</option>
+      <option value="40-50">R$ 40 - R$ 50</option>
+      <option value="50-100">R$ 50 - R$ 100</option>
+    </select>
+  </div>
+
+  <div id="login" class="login-wrapper">
+    <div class="login-box">
+      <h1>Carol & Marlon</h1>
+      <div class="login-phrase">O nosso sonho começa com a sua presença.</div>
+      <input type="text" id="nomeUser" placeholder="Como podemos te chamar?">
+      <br>
+      <button class="btn-login-small" onclick="entrar()">Ver Presentes</button>
+    </div>
+  </div>
+
+  <div id="lista" class="hidden container">
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <footer class="fixed-footer hidden" id="mainFooter">
+    <div class="nav-item active" onclick="filtrar('Todos', this)"><i class="fas fa-th-large"></i><span>Todos</span></div>
+    <div class="nav-item" onclick="filtrar('Cozinha', this)"><i class="fas fa-utensils"></i><span>Cozinha</span></div>
+    <div class="nav-item" onclick="filtrar('Quarto', this)"><i class="fas fa-bed"></i><span>Quarto</span></div>
+    <div class="nav-item" onclick="filtrar('Banheiro', this)"><i class="fas fa-bath"></i><span>Banheiro</span></div>
+    <div class="nav-item" onclick="filtrar('Limpeza', this)"><i class="fas fa-broom"></i><span>Limpeza</span></div>
+  </footer>
+
+  <div id="modalRecado" class="custom-modal-overlay hidden">
+    <div class="custom-modal-box">
+      <h3 style="font-family:'Playfair Display'">Deixar um Recado</h3>
+      <textarea id="txtRecado" placeholder="Escreva aqui seu recado para os noivos..."></textarea>
+      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:15px; padding: 12px;" onclick="enviarRecado()">Enviar Recado</button>
+      <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 10px; padding: 12px;" onclick="fecharModalRecado()">Cancelar</button>
+    </div>
+  </div>
+
+  <div id="customConfirm" class="custom-modal-overlay hidden">
+    <div class="custom-modal-box">
+      <h3 style="font-family:'Playfair Display'">Confirmar Escolha?</h3>
+      <p id="confirmText" style="font-size:0.85rem; opacity:0.8; margin-bottom:25px;"></p>
+      <button class="btn-presente" style="background:white; color:var(--navy); margin-bottom:10px; padding: 12px;" onclick="confirmarAcao()">Sim, Escolher</button>
+      <button class="btn-presente" style="background:transparent; border:1px solid white; padding: 12px;" onclick="fecharModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <div id="customSuccess" class="custom-modal-overlay hidden">
+    <div class="custom-modal-box">
+      <i class="fas fa-check-circle" style="font-size:3rem; color:var(--accent); margin-bottom:15px;"></i>
+      <h3 style="font-family:'Playfair Display'">Muito Obrigado!</h3>
+      <p id="successMsg" style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 20px;">Sua escolha foi registrada com sucesso.</p>
+      <button class="btn-presente" style="background:white; color:var(--navy); padding: 12px;" onclick="fecharSucesso()">Fechar</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
