@@ -1,109 +1,216 @@
 :root {
   --navy: #0A192F;
   --navy-light: #112240;
-  --beige: #F9F6F0;
+  --navy-hover: #1d3557;
+  --beige: #F8F9FA;
+  --white: #FFFFFF;
   --glass: rgba(255, 255, 255, 0.08);
   --border: rgba(255, 255, 255, 0.15);
-  --border-dark: rgba(0, 0, 0, 0.08);
+  --border-dark: rgba(10, 25, 47, 0.08);
   --accent: #64FFDA;
   --accent-dark: #1E40AF;
+  --shadow-sm: 0 4px 6px -1px rgba(10, 25, 47, 0.05), 0 2px 4px -1px rgba(10, 25, 47, 0.03);
+  --shadow-md: 0 10px 25px -5px rgba(10, 25, 47, 0.1), 0 8px 10px -6px rgba(10, 25, 47, 0.05);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body { 
   font-family: 'Poppins', sans-serif; 
   background: var(--beige); 
   color: var(--navy); 
-  margin: 0; padding-top: 115px; padding-bottom: 80px; 
+  margin: 0; 
+  padding-top: 130px; 
+  padding-bottom: 100px; 
+  -webkit-font-smoothing: antialiased;
 }
 
 /* CABEÇALHO PRINCIPAL */
 .fixed-header {
-  position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+  position: fixed; top: 0; left: 0; width: 100%; height: 65px;
   background: var(--navy); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 15px; box-sizing: border-box; z-index: 1001; color: white;
+  padding: 0 20px; box-sizing: border-box; z-index: 1001; color: white;
+  box-shadow: var(--shadow-sm);
 }
-.header-title { font-family: 'Playfair Display', serif; font-size: 0.9rem; }
+.header-title { 
+  font-family: 'Playfair Display', serif; 
+  font-size: 1.1rem; 
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
 /* BOTÃO DE RECADO NO TOPO */
 .btn-recado-top {
-  background: transparent; border: 1px solid var(--border); color: white;
-  padding: 6px 10px; border-radius: 8px; font-size: 0.65rem;
-  font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  background: rgba(255, 255, 255, 0.05); 
+  border: 1px solid var(--border); 
+  color: white;
+  padding: 8px 14px; 
+  border-radius: 20px; 
+  font-size: 0.75rem;
+  font-weight: 500; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  gap: 8px;
+  transition: var(--transition);
+}
+.btn-recado-top:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
 }
 
 /* BARRA DE FILTRO DE PREÇO */
 .price-filter-bar {
-  position: fixed; top: 60px; left: 0; width: 100%; height: 55px;
+  position: fixed; top: 65px; left: 0; width: 100%; height: 60px;
   background: var(--navy-light); border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-around;
-  padding: 0 10px; box-sizing: border-box; z-index: 1000;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 0 15px; box-sizing: border-box; z-index: 1000;
+  box-shadow: var(--shadow-sm);
 }
 
 .price-filter-bar select {
-  background: white; color: var(--navy); border: 1px solid var(--border);
-  border-radius: 5px; padding: 6px; font-size: 0.75rem; 
-  outline: none; width: 46%; font-weight: 500;
+  background: var(--white); color: var(--navy); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; 
+  outline: none; width: 48%; max-width: 180px; font-weight: 500;
+  cursor: pointer; transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+.price-filter-bar select:focus {
+  border-color: var(--accent);
 }
 
 /* LOGIN AJUSTADO */
 .login-wrapper {
   height: 100vh; display: flex; align-items: center; justify-content: center;
-  position: fixed; top: 0; width: 100%; background: var(--navy); z-index: 2000; color: white;
+  position: fixed; top: 0; left: 0; width: 100%; 
+  background: radial-gradient(circle at center, var(--navy-light) 0%, var(--navy) 100%); 
+  z-index: 2000; color: white;
 }
 .login-box {
-  background: var(--glass); backdrop-filter: blur(15px); padding: 40px 25px; border-radius: 25px;
-  text-align: center; width: 85%; max-width: 350px; border: 1px solid var(--border);
+  background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 45px 30px; border-radius: 30px;
+  text-align: center; width: 85%; max-width: 380px; border: 1px solid var(--border);
   box-sizing: border-box;
+  box-shadow: var(--shadow-md);
 }
-.login-box h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; margin: 0; }
-.login-phrase { font-family: 'Playfair Display', serif; font-style: italic; opacity: 0.8; font-size: 1rem; margin-top: 5px; margin-bottom: 30px; }
+.login-box h1 { 
+  font-family: 'Playfair Display', serif; 
+  font-size: 2.4rem; 
+  margin: 0; 
+  font-weight: 600;
+}
+.login-phrase { 
+  font-family: 'Playfair Display', serif; 
+  font-style: italic; 
+  opacity: 0.85; 
+  font-size: 1.05rem; 
+  margin-top: 8px; 
+  margin-bottom: 35px; 
+  line-height: 1.4;
+}
 
 #nomeUser {
-  width: 100%; padding: 12px; border-radius: 10px; border: none; 
+  width: 100%; padding: 14px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); 
+  background: rgba(255, 255, 255, 0.9);
   margin-bottom: 20px; outline: none; box-sizing: border-box;
-  text-align: center; font-family: 'Poppins';
+  text-align: center; font-family: 'Poppins'; font-size: 0.95rem;
+  color: var(--navy); transition: var(--transition);
+}
+#nomeUser:focus {
+  background: var(--white);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.2);
 }
 
 .btn-login-small {
-  background: white; color: var(--navy); border: none;
-  padding: 10px 30px; border-radius: 30px; font-size: 0.8rem;
+  background: var(--white); color: var(--navy); border: none;
+  padding: 12px 35px; border-radius: 30px; font-size: 0.85rem;
   font-weight: 600; cursor: pointer; display: inline-block;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+.btn-login-small:hover {
+  background: var(--beige);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 /* GRID E CARDS */
-.container { padding: 15px; }
+.container { padding: 20px; max-width: 600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
 .card {
-  background: white; border-radius: 12px; border: 1px solid var(--border-dark);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; position: relative;
+  background: var(--white); border-radius: 16px; border: 1px solid var(--border-dark);
+  box-shadow: var(--shadow-sm); overflow: hidden; display: flex; flex-direction: column; 
+  position: relative; transition: var(--transition);
 }
-.card.esgotado { opacity: 0.7; background: #F3F4F6; }
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+.card.esgotado { opacity: 0.75; background: #F1F5F9; transform: none !important; box-shadow: none !important; }
 .card.esgotado .card-img { filter: grayscale(100%); }
 
 .esgotado-badge {
-  position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.7);
-  color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; z-index: 10;
+  position: absolute; top: 10px; right: 10px; background: rgba(10, 25, 47, 0.85);
+  backdrop-filter: blur(4px); color: white; padding: 5px 10px; border-radius: 8px; 
+  font-size: 0.7rem; font-weight: 500; z-index: 10;
+  letter-spacing: 0.5px;
 }
 
-.card-img-wrapper { position: relative; width: 100%; padding-top: 80%; }
-.card-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-.card-content { padding: 10px; text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
-.card-title { font-family: 'Playfair Display', serif; font-size: 0.85rem; height: 32px; overflow: hidden; color: var(--navy); }
-.price-tag { font-size: 0.8rem; color: var(--accent-dark); font-weight: 600; margin-bottom: 5px; }
+.card-img-wrapper { position: relative; width: 100%; padding-top: 85%; background: #e2e8f0; overflow: hidden; }
+.card-img { 
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.card:hover .card-img { transform: scale(1.05); }
+
+.card-content { padding: 14px; text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+
+.card-title { 
+  font-family: 'Playfair Display', serif; 
+  font-size: 0.9rem; 
+  height: 38px; 
+  overflow: hidden; 
+  color: var(--navy); 
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.price-tag { 
+  font-size: 0.85rem; 
+  color: var(--accent-dark); 
+  font-weight: 600; 
+  margin-bottom: 12px; 
+}
 
 /* BOTÕES DO CARD */
 .btn-shopee {
   background: transparent; color: var(--navy); border: 1px solid var(--navy);
-  padding: 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 600;
+  padding: 9px; border-radius: 8px; font-size: 0.7rem; font-weight: 600;
   width: 100%; cursor: pointer; text-decoration: none; display: block;
-  margin-bottom: 6px; box-sizing: border-box;
+  margin-bottom: 8px; box-sizing: border-box; transition: var(--transition);
 }
-.btn-shopee:hover { background: #f0f0f0; }
+.btn-shopee:hover { background: var(--navy); color: white; }
 
 .btn-presente {
-  background: var(--navy); color: white; border: none; padding: 8px; border-radius: 6px;
-  font-size: 0.7rem; font-weight: 600; width: 100%; cursor: pointer;
+  background: var(--navy); color: white; border: none; padding: 9px; border-radius: 8px;
+  font-size: 0.75rem; font-weight: 600; width: 100%; cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+.btn-presente:hover:not(:disabled) {
+  background: var(--navy-hover);
+  transform: translateY(-1px);
+}
+.btn-presente:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* RODAPÉ */
@@ -112,66 +219,88 @@ body {
   background: var(--navy); border-top: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-around;
   padding: 0 10px; box-sizing: border-box; z-index: 1000;
+  box-shadow: 0 -4px 20px rgba(10, 25, 47, 0.1);
 }
 .nav-item {
   display: flex; flex-direction: column; align-items: center;
-  color: rgba(255,255,255,0.4); font-size: 0.65rem; cursor: pointer; transition: 0.3s;
+  color: rgba(255,255,255,0.5); font-size: 0.65rem; cursor: pointer; 
+  transition: var(--transition); padding: 6px 10px; border-radius: 10px;
 }
-.nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
-.nav-item.active { color: white; font-weight: 600; }
+.nav-item i { font-size: 1.25rem; margin-bottom: 4px; transition: var(--transition); }
+.nav-item:hover { color: rgba(255,255,255,0.8); }
+.nav-item.active { 
+  color: var(--accent); 
+  font-weight: 600; 
+}
+.nav-item.active i {
+  transform: translateY(-2px);
+}
 
 /* MODAIS */
 .custom-modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  background: rgba(10, 25, 47, 0.75); backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 4000; display: flex; justify-content: center; align-items: center; color: white;
+  animation: fadeIn 0.3s ease;
 }
 .custom-modal-box {
-  background: var(--navy); border-radius: 15px; padding: 30px; text-align: center; width: 85%; max-width: 320px;
+  background: var(--navy); border: 1px solid var(--border);
+  border-radius: 20px; padding: 30px; text-align: center; width: 85%; max-width: 340px;
+  box-shadow: var(--shadow-md);
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #txtRecado {
-  width: 100%; height: 100px; border-radius: 8px; border: none;
-  padding: 10px; margin-top: 15px; font-family: 'Poppins'; outline: none; box-sizing: border-box;
-  color: var(--navy);
+  width: 100%; height: 110px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
+  padding: 12px; margin-top: 15px; font-family: 'Poppins'; outline: none; box-sizing: border-box;
+  color: var(--navy); background: rgba(255,255,255,0.95); font-size: 0.9rem;
+  resize: none; transition: var(--transition);
+}
+#txtRecado:focus {
+  background: var(--white);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.2);
 }
 
 .hidden { display: none !important; }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* RESPONSIVIDADE */
 @media (max-width: 480px) {
   .grid {
-    grid-template-columns: repeat(2, 1fr); /* Mantém 2 colunas, mas ajusta o gap */
-    gap: 10px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
   .login-box h1 {
-    font-size: 1.8rem;
+    font-size: 2rem;
   }
 
   .header-title {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
   }
 
-  /* Ajuste para o botão de recado não "esmagar" o título no topo */
   .btn-recado-top {
-    padding: 5px 8px;
-    font-size: 0.6rem;
+    padding: 6px 10px;
+    font-size: 0.65rem;
   }
 }
 
-/* Para telas muito pequenas (ex: iPhone SE) */
 @media (max-width: 350px) {
   .grid {
-    grid-template-columns: 1fr; /* 1 coluna apenas para não espremer o conteúdo */
+    grid-template-columns: 1fr;
   }
   
   .fixed-header {
     padding: 0 10px;
   }
-}
-
-/* Garante que o container não fique colado nas bordas */
-.container {
-  width: 100%;
-  box-sizing: border-box;
 }
