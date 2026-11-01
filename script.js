@@ -21,27 +21,45 @@ function preCarregarDados() {
 }
 
 // Função para realizar o login com tela de carregamento de 2 segundos
+// Função para realizar o login com tela de carregamento de 2 segundos
 function entrar() {
-  const inputNome = document.getElementById('nomeUser').value.trim();
-  if(!inputNome) return alert("Por favor, digite seu nome.");
+  const inputNome = document.getElementById('nomeUser');
   
-  usuarioAtivo = inputNome;
+  // Verifica se o input existe e pega o valor sem espaços extras
+  if (!inputNome || !inputNome.value.trim()) {
+    alert("Por favor, digite seu nome.");
+    return;
+  }
   
-  // Mostra a tela de carregamento (Loading)
+  usuarioAtivo = inputNome.value.trim();
+  
+  // Mostra a tela de carregamento (Loading) e esconde o login
   document.getElementById('login').classList.add('hidden');
   document.getElementById('loadingScreen').classList.remove('hidden');
   
   // Garante o tempo mínimo de 2 segundos de carregamento
   const tempoMinimo = new Promise(resolve => setTimeout(resolve, 2000));
   
-  // Se os dados já terminaram de carregar, ou espera bater os 2 segundos
+  // Aguarda os dados estarem prontos ou libera após o tempo
   const aguardarDados = new Promise(resolve => {
-    const verificar = setInterval(() => {
-      if (listaGlobal.length > 0) {
+    // Se já tiver dados, libera na hora
+    if (listaGlobal.length > 0) {
+      resolve();
+    } else {
+      // Caso contrário, checa a cada 100ms
+      const verificar = setInterval(() => {
+        if (listaGlobal.length > 0) {
+          clearInterval(verificar);
+          resolve();
+        }
+      }, 100);
+      
+      // Fallback de segurança: se demorar mais de 6 segundos, libera mesmo assim para não travar
+      setTimeout(() => {
         clearInterval(verificar);
         resolve();
-      }
-    }, 100);
+      }, 6000);
+    }
   });
 
   Promise.all([tempoMinimo, aguardarDados]).then(() => {
