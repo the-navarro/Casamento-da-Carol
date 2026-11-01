@@ -235,29 +235,49 @@ body {
   box-shadow: none;
 }
 
-/* RODAPÉ COM GRADIENTE */
+/* RODAPÉ MINIMALISTA COM BLUR (GLASSMORPHISM) */
 .fixed-footer {
-  position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
-  background: var(--navy-gradient); border-top: 1px solid var(--border);
+  position: fixed; bottom: 0; left: 0; width: 100%; height: 72px;
+  background: rgba(10, 25, 47, 0.75); 
+  backdrop-filter: blur(16px); 
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   display: flex; align-items: center; justify-content: space-around;
   padding: 0 8px; box-sizing: border-box; z-index: 1000;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
 }
+
 .nav-item {
   display: flex; flex-direction: column; align-items: center;
-  color: rgba(255, 255, 255, 0.45); font-size: 0.62rem; cursor: pointer; 
-  transition: var(--transition); padding: 4px 8px; border-radius: 10px;
+  color: rgba(255, 255, 255, 0.65); font-size: 0.6rem; cursor: pointer; 
+  transition: var(--transition); padding: 6px 10px; border-radius: 12px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }
-.nav-item i { font-size: 1.2rem; margin-bottom: 3px; transition: var(--transition); }
-.nav-item:hover { color: rgba(255, 255, 255, 0.85); }
+
+/* Ícones Minimalistas (Finos e limpos) */
+.nav-item i { 
+  font-size: 1.1rem; 
+  margin-bottom: 3px; 
+  transition: var(--transition); 
+  font-weight: 300; /* Deixa o traço do FontAwesome mais leve/minimalista */
+}
+
+.nav-item:hover { 
+  color: rgba(255, 255, 255, 0.95); 
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Item Selecionado legível, destacado e elegante */
 .nav-item.active { 
   color: var(--accent); 
-  font-weight: 600; 
+  font-weight: 500; 
+  background: rgba(100, 255, 218, 0.08);
 }
+
 .nav-item.active i {
   transform: translateY(-2px);
-  filter: drop-shadow(0 2px 4px rgba(100, 255, 218, 0.4));
+  filter: drop-shadow(0 2px 6px rgba(100, 255, 218, 0.4));
 }
 
 /* MODAIS COM EFEITO DE VIDRO E GRADIENTE */
