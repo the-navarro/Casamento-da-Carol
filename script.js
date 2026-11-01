@@ -6,29 +6,59 @@ let listaGlobal = [];
 let categoriaAtiva = "Todos";
 let itemSelecionado = null;
 
-// Função para realizar o login e trocar de tela
-function entrar() {
-  usuarioAtivo = document.getElementById('nomeUser').value;
-  if(!usuarioAtivo) return alert("Por favor, digite seu nome.");
-  
-  document.getElementById('login').classList.add('hidden');
-  document.getElementById('lista').classList.remove('hidden');
-  document.getElementById('priceBar').classList.remove('hidden');
-  document.getElementById('mainFooter').classList.remove('hidden');
-  document.getElementById('btnRecadoHeader').classList.remove('hidden');
-  
-  carregar();
-}
+// Dispara o carregamento dos dados em segundo plano assim que a página abre
+window.addEventListener('DOMContentLoaded', () => {
+  preCarregarDados();
+});
 
-// Busca os itens da planilha via requisição GET
-function carregar() {
+function preCarregarDados() {
   fetch(`${URL_API}?action=getPresentes`)
     .then(res => res.json())
     .then(itens => {
       listaGlobal = itens;
-      aplicarFiltros();
     })
-    .catch(err => console.error("Erro ao carregar presentes:", err));
+    .catch(err => console.error("Erro no pré-carregamento:", err));
+}
+
+// Função para realizar o login com tela de carregamento de 2 segundos
+function entrar() {
+  const inputNome = document.getElementById('nomeUser').value.trim();
+  if(!inputNome) return alert("Por favor, digite seu nome.");
+  
+  usuarioAtivo = inputNome;
+  
+  // Mostra a tela de carregamento (Loading)
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('loadingScreen').classList.remove('hidden');
+  
+  // Garante o tempo mínimo de 2 segundos de carregamento
+  const tempoMinimo = new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Se os dados já terminaram de carregar, ou espera bater os 2 segundos
+  const aguardarDados = new Promise(resolve => {
+    const verificar = setInterval(() => {
+      if (listaGlobal.length > 0) {
+        clearInterval(verificar);
+        resolve();
+      }
+    }, 100);
+  });
+
+  Promise.all([tempoMinimo, aguardarDados]).then(() => {
+    // Esconde o loading e revela o app principal
+    document.getElementById('loadingScreen').classList.add('hidden');
+    document.getElementById('lista').classList.remove('hidden');
+    document.getElementById('priceBar').classList.remove('hidden');
+    document.getElementById('mainFooter').classList.remove('hidden');
+    document.getElementById('btnRecadoHeader').classList.remove('hidden');
+    
+    aplicarFiltros();
+  });
+}
+
+// Caso queira forçar uma atualização manual se precisar
+function carregar() {
+  preCarregarDados();
 }
 
 // Abre e fecha o modal de recados
@@ -45,7 +75,7 @@ function enviarRecado() {
   
   fetch(URL_API, {
     method: 'POST',
-    mode: 'no-cors', // Necessário para evitar erros de política do Google
+    mode: 'no-cors',
     body: JSON.stringify({ action: 'recado', texto: texto, nome: usuarioAtivo })
   }).then(() => {
     fecharModalRecado();
@@ -150,7 +180,7 @@ function confirmarAcao() {
     fecharModal();
     document.getElementById('successMsg').innerText = "Sua escolha foi registrada com sucesso.";
     document.getElementById('customSuccess').classList.remove('hidden');
-    carregar(); // Recarrega a lista para mostrar o item como esgotado
+    preCarregarDados(); // Atualiza os dados em background
   });
 }
 
