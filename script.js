@@ -77,11 +77,9 @@ function tentarEntrar() {
         document.getElementById('btnAdicionarHeader')?.classList.remove('hidden');
         document.getElementById('filtroStatusProduto')?.classList.remove('hidden');
         
-        // Configura o botão do topo para Administradores/Noivos verem os recados
         iconeRecado.className = "fas fa-envelope-open-text";
         textoRecado.innerText = "Ver Recados";
       } else {
-        // Configura para convidados mandarem recado
         iconeRecado.className = "fas fa-envelope";
         textoRecado.innerText = "Recado";
       }
@@ -121,9 +119,15 @@ function processarUploadArquivo(input) {
           linha: linhaAtual 
         })
       }).then(() => {
-        document.getElementById('previewImg').src = base64Data;
-        document.getElementById('formImagemUrl').value = base64Data;
-        setTimeout(() => carregarDadosServidor(), 3000);
+        carregarDadosServidor(() => {
+          if (linhaAtual) {
+            const itemAtualizado = listaGlobal.find(i => i.index === parseInt(linhaAtual));
+            if (itemAtualizado) {
+              document.getElementById('previewImg').src = itemAtualizado.imagem;
+              document.getElementById('formImagemUrl').value = itemAtualizado.imagemOriginal;
+            }
+          }
+        });
       });
     };
     reader.readAsDataURL(file);
@@ -265,7 +269,6 @@ function excluirItem(idx) {
   });
 }
 
-// CONTROLE DE RECADOS (CONVIDADO VS ADM)
 function clicarBotaoRecados() {
   if (tipoPermissao === 'convidado') {
     abrirModalRecado();
@@ -391,6 +394,10 @@ function renderizarCards(itens) {
     const isE = item.status === 'Escolhido' || item.check === true;
     const isEsgotadoAdm = item.statusProduto === 'Esgotado';
     const foraDeLinha = item.statusProduto === 'Inválido' || item.statusProduto === 'Retirado';
+    
+    const urlLens = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(item.imagem)}`;
+    const textWhats = encodeURIComponent(`Olá! Gostaria de pesquisar este item do casamento: ${item.nome} - ${item.imagem}`);
+    const urlWhats = `https://api.whatsapp.com/send?text=${textWhats}`;
 
     grid.innerHTML += `
       <div class="card ${isE ? 'esgotado' : ''}">
@@ -399,6 +406,19 @@ function renderizarCards(itens) {
         ${ehAdmin && foraDeLinha ? `<div class="status-badge-admin">${item.statusProduto}</div>` : ''}
         <div class="card-img-wrapper">
           <img src="${item.imagem}" class="card-img" onerror="this.src='https://via.placeholder.com/300?text=Imagem'">
+          ${ehAdmin ? `
+            <div class="img-actions-bar">
+              <a href="${item.imagem}" download="presente.jpg" target="_blank" class="btn-img-action" title="Download">
+                <i class="fas fa-download"></i>
+              </a>
+              <a href="${urlLens}" target="_blank" class="btn-img-action" title="Google Lens">
+                <i class="fas fa-camera"></i>
+              </a>
+              <a href="${urlWhats}" target="_blank" class="btn-img-action" title="Compartilhar no WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+              </a>
+            </div>
+          ` : ''}
         </div>
         <div class="card-content">
           <div>
@@ -413,7 +433,7 @@ function renderizarCards(itens) {
               </div>
             ` : ''}
             <a href="${item.link}" target="_blank" class="btn-shopee" ${isE ? 'style="pointer-events: none; opacity: 0.5;"' : ''}>
-              <i class="fas fa-shopping-bag"></i> Ver na Shopee
+              <i class="fas fa-shopping-cart"></i> Comprar
             </a>
             <button class="btn-presente" ${isE ? 'disabled' : ''} onclick="abrirConfirmacao(${item.index}, '${item.nome.replace(/'/g, "\\'")}')">
               ${isE ? 'Indisponível' : 'Escolher'}
