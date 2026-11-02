@@ -1,4 +1,3 @@
-// INSIRA AQUI A SUA URL DA API DO GOOGLE APPS SCRIPT
 const URL_API = "https://script.google.com/macros/s/AKfycbyaORFvDT1v-l9hfld8qWR6FuRBJzHasJvUKMSl0b4Dish-gbkvyjuVXtMVPXNDxtlB/exec";
 
 let usuarioAtivo = "";
@@ -7,7 +6,7 @@ let listaGlobal = [];
 let categoriaAtiva = "Todos";
 let itemSelecionado = null;
 
-// Carrega os dados via API do Apps Script assim que a página abre
+// Pré-carrega os dados do Google Sheets no momento em que a página é aberta
 window.addEventListener('DOMContentLoaded', () => {
   carregarDadosServidor();
 });
@@ -20,11 +19,15 @@ function carregarDadosServidor(callback) {
         listaGlobal = itens;
         if (callback) callback();
       } else {
-        console.error("Retorno inválido:", itens);
+        console.error("Retorno inválido da API:", itens);
+        listaGlobal = [];
+        if (callback) callback();
       }
     })
     .catch(err => {
       console.error("Erro ao carregar dados:", err);
+      listaGlobal = [];
+      if (callback) callback();
     });
 }
 
@@ -60,9 +63,9 @@ function tentarEntrar() {
   if (loginEl) { loginEl.classList.add('hidden'); loginEl.style.display = 'none'; }
   if (loadingEl) { loadingEl.classList.remove('hidden'); loadingEl.style.display = 'flex'; }
 
-  // Garante o carregamento dos dados e os 2 segundos visuais
-  setTimeout(() => {
-    carregarDadosServidor(() => {
+  // Garante a re-sincronização e realiza a transição de 1.5s
+  carregarDadosServidor(() => {
+    setTimeout(() => {
       if (loadingEl) { loadingEl.classList.add('hidden'); loadingEl.style.display = 'none'; }
       
       document.getElementById('lista')?.classList.remove('hidden');
@@ -75,8 +78,8 @@ function tentarEntrar() {
       }
 
       aplicarFiltros();
-    });
-  }, 2000);
+    }, 1500);
+  });
 }
 
 function toggleValorMaximo() {
@@ -305,7 +308,7 @@ function confirmarAcao() {
   fetch(URL_API, {
     method: 'POST',
     mode: 'no-cors',
-    body: JSON.stringify({ action: 'escolher', linha: itemSelecionado.index || itemSelecionado.idx, nome: usuarioAtivo })
+    body: JSON.stringify({ action: 'escolher', linha: itemSelecionado.idx, nome: usuarioAtivo })
   }).then(() => {
     fecharModal();
     document.getElementById('successMsg').innerText = "Sua escolha foi registrada com sucesso.";
