@@ -62,13 +62,12 @@
         </select>
       </div>
 
-      <!-- Dica de senha removida do placeholder -->
       <div id="grupoSenha" class="login-input-group hidden">
         <label>Senha de Acesso</label>
         <input type="password" id="senhaAcesso" placeholder="Digite sua senha">
       </div>
 
-      <button type="button" class="btn-login-small" onclick="entrar()">Ver Presentes</button>
+      <button type="button" class="btn-login-small" onclick="tentarEntrar()">Ver Presentes</button>
     </div>
   </div>
 
@@ -143,8 +142,8 @@
       <div class="modal-form-group">
         <label>Tipo de Valor</label>
         <select id="formTipoValor" onchange="toggleValorMaximo()">
-          <option value="Preço Fixo">Preço Fixo</option>
-          <option value="Faixa de preço">Faixa de preço</option>
+          <option value="Único">Único</option>
+          <option value="Faixa de Preço">Faixa de Preço</option>
         </select>
       </div>
 
@@ -170,7 +169,12 @@
 
       <div class="modal-form-group">
         <label>Status do Produto</label>
-        <input type="text" id="formStatusProduto" placeholder="Ativo">
+        <select id="formStatusProduto">
+          <option value="Ativo">Ativo</option>
+          <option value="Esgotado">Esgotado</option>
+          <option value="Inválido">Inválido</option>
+          <option value="Retirado">Retirado</option>
+        </select>
       </div>
 
       <button class="btn-presente" style="background:white; color:var(--navy); margin-top:10px; padding: 12px;" onclick="salvarItemForm()">Salvar Item</button>
