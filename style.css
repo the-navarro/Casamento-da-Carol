@@ -89,7 +89,7 @@ body {
   box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.25);
 }
 
-/* TELA DE LOGIN APRIMORADA */
+/* TELA DE LOGIN */
 .login-wrapper {
   height: 100vh; display: flex; align-items: center; justify-content: center;
   position: fixed; top: 0; left: 0; width: 100%; 
@@ -141,9 +141,7 @@ body {
   font-family: 'Poppins'; font-size: 0.85rem;
   color: var(--navy); transition: var(--transition);
 }
-#tipoAcesso {
-  cursor: pointer;
-}
+#tipoAcesso { cursor: pointer; }
 #nomeUser:focus, #tipoAcesso:focus, #senhaAcesso:focus {
   background: var(--white);
   border-color: var(--accent);
@@ -163,7 +161,7 @@ body {
   transform: translateY(-2px);
 }
 
-/* GRID E CARDS CORRIGIDOS (SEM BUGS DE ALINHAMENTO) */
+/* GRID E CARDS */
 .container { 
   padding: 16px; 
   max-width: 600px; 
@@ -175,7 +173,7 @@ body {
   display: grid; 
   grid-template-columns: repeat(2, 1fr); 
   gap: 14px; 
-  align-items: stretch; /* Garante altura uniforme e evita itens fora de linha */
+  align-items: stretch;
 }
 
 .card {
@@ -195,6 +193,11 @@ body {
   position: absolute; top: 8px; right: 8px; background: rgba(10, 25, 47, 0.85);
   backdrop-filter: blur(4px); color: white; padding: 4px 8px; border-radius: 6px; 
   font-size: 0.65rem; font-weight: 500; z-index: 10;
+}
+
+.status-badge-admin {
+  position: absolute; top: 8px; left: 8px; background: #991b1b;
+  color: white; padding: 3px 6px; border-radius: 5px; font-size: 0.6rem; z-index: 10; font-weight: 600;
 }
 
 .card-img-wrapper { position: relative; width: 100%; padding-top: 80%; background: #F1F5F9; overflow: hidden; }
@@ -260,7 +263,7 @@ body {
 .btn-presente:hover:not(:disabled) { background: var(--navy-light); }
 .btn-presente:disabled { background: #CBD5E1; color: #64748B; cursor: not-allowed; }
 
-/* RODAPÉ EM BLUR COM ÍCONES MINIMALISTAS */
+/* RODAPÉ EM BLUR */
 .fixed-footer {
   position: fixed; bottom: 0; left: 0; width: 100%; height: 72px;
   background: rgba(10, 25, 47, 0.75); 
@@ -282,7 +285,7 @@ body {
 .nav-item.active { color: var(--accent); font-weight: 500; background: rgba(100, 255, 218, 0.08); }
 .nav-item.active i { transform: translateY(-2px); filter: drop-shadow(0 2px 6px rgba(100, 255, 218, 0.4)); }
 
-/* MODAIS E FORMULÁRIOS COMPLETOS */
+/* MODAIS */
 .custom-modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(6, 15, 29, 0.8); backdrop-filter: blur(12px);
@@ -312,10 +315,6 @@ body {
   width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
   background: rgba(255,255,255,0.95); font-family: 'Poppins'; font-size: 0.8rem;
   color: var(--navy); outline: none; box-sizing: border-box;
-}
-.modal-form-group input:focus, .modal-form-group select:focus {
-  border-color: var(--accent);
-  background: #fff;
 }
 
 #txtRecado {
