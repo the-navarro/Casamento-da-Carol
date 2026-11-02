@@ -6,7 +6,6 @@ let listaGlobal = [];
 let categoriaAtiva = "Todos";
 let itemSelecionado = null;
 
-// Pré-carrega os dados do Google Sheets no momento em que a página é aberta
 window.addEventListener('DOMContentLoaded', () => {
   carregarDadosServidor();
 });
@@ -19,7 +18,6 @@ function carregarDadosServidor(callback) {
         listaGlobal = itens;
         if (callback) callback();
       } else {
-        console.error("Retorno inválido da API:", itens);
         listaGlobal = [];
         if (callback) callback();
       }
@@ -63,7 +61,6 @@ function tentarEntrar() {
   if (loginEl) { loginEl.classList.add('hidden'); loginEl.style.display = 'none'; }
   if (loadingEl) { loadingEl.classList.remove('hidden'); loadingEl.style.display = 'flex'; }
 
-  // Garante a re-sincronização e realiza a transição de 1.5s
   carregarDadosServidor(() => {
     setTimeout(() => {
       if (loadingEl) { loadingEl.classList.add('hidden'); loadingEl.style.display = 'none'; }
@@ -82,6 +79,17 @@ function tentarEntrar() {
   });
 }
 
+function converterLinkDriveParaExibicao(link) {
+  if (!link || typeof link !== 'string') return "https://via.placeholder.com/150?text=Sem+Foto";
+  const idMatch = link.match(/[-\w]{25,}/);
+  return idMatch ? "https://lh3.googleusercontent.com/d/" + idMatch[0] : link;
+}
+
+function atualizarPreviewAoDigitar(link) {
+  const urlFinal = converterLinkDriveParaExibicao(link);
+  document.getElementById('previewImg').src = urlFinal;
+}
+
 function toggleValorMaximo() {
   const tipoValor = document.getElementById('formTipoValor').value;
   const grupoVMax = document.getElementById('grupoValorMax');
@@ -90,62 +98,79 @@ function toggleValorMaximo() {
   } else {
     grupoVMax.classList.add('hidden');
     document.getElementById('formVMax').value = '';
+    document.getElementById('avisoValorMax').classList.add('hidden');
   }
 }
 
-function abrirModalAdicionar() {
-  document.getElementById('modalItemTitulo').innerText = "Adicionar Novo Item";
-  document.getElementById('formIndex').value = "";
-  document.getElementById('formId').value = "";
-  document.getElementById('formItem').value = "";
-  document.getElementById('formNome').value = "";
-  document.getElementById('formLink').value = "";
-  document.getElementById('formCategoria').value = "Cozinha";
-  document.getElementById('formImagem').value = "";
-  document.getElementById('formVMin').value = "";
-  document.getElementById('formTipoValor').value = "Único";
-  document.getElementById('formVMax').value = "";
-  document.getElementById('formStatus').value = "Disponível";
-  document.getElementById('formCheck').value = "FALSE";
-  document.getElementById('formEscolhidoPor').value = "";
-  document.getElementById('formStatusProduto').value = "Ativo";
-  
+function validarValoresPreco() {
+  const vMinStr = document.getElementById('formVMin').value.replace(',', '.');
+  const vMaxStr = document.getElementById('formVMax').value.replace(',', '.');
+  const aviso = document.getElementById('avisoValorMax');
+
+  const vMin = parseFloat(vMinStr);
+  const vMax = parseFloat(vMaxStr);
+
+  if (!isNaN(vMin) && !isNaN(vMax) && vMax < vMin) {
+    aviso.classList.remove('hidden');
+  } else {
+    aviso.classList.add('hidden');
+  }
+}
+
+function abrirTelaEdicao(idx = null) {
+  if (idx === null) {
+    // Adicionar novo item
+    document.getElementById('editorTitulo').innerText = "Adicionar Novo Item";
+    document.getElementById('formIndex').value = "";
+    document.getElementById('formId').value = "(Automático)";
+    document.getElementById('formItem').value = "";
+    document.getElementById('formNome').value = "";
+    document.getElementById('formLink').value = "";
+    document.getElementById('formCategoria').value = "Cozinha";
+    document.getElementById('formImagem').value = "";
+    document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Sem+Foto";
+    document.getElementById('formVMin').value = "";
+    document.getElementById('formTipoValor').value = "Único";
+    document.getElementById('formVMax').value = "";
+    document.getElementById('formStatus').value = "";
+    document.getElementById('formCheck').value = "false";
+    document.getElementById('formEscolhidoPor').value = "";
+    document.getElementById('formStatusProduto').value = "Ativo";
+  } else {
+    // Editar item existente
+    const item = listaGlobal.find(i => i.index === idx);
+    if (!item) return;
+
+    document.getElementById('editorTitulo').innerText = "Editar Item Completo";
+    document.getElementById('formIndex').value = item.index;
+    document.getElementById('formId').value = item.id || "";
+    document.getElementById('formItem').value = item.itemCodigo || "";
+    document.getElementById('formNome').value = item.nome || "";
+    document.getElementById('formLink').value = item.link || "";
+    document.getElementById('formCategoria').value = item.categoria || "Cozinha";
+    document.getElementById('formImagem').value = item.imagemOriginal || "";
+    document.getElementById('previewImg').src = item.imagem || "https://via.placeholder.com/150?text=Sem+Foto";
+    document.getElementById('formVMin').value = item.vMinRaw || "";
+    document.getElementById('formTipoValor').value = item.tipoValor || "Único";
+    document.getElementById('formVMax').value = item.vMaxRaw || "";
+    document.getElementById('formStatus').value = item.status || "";
+    document.getElementById('formCheck').value = String(item.check).toLowerCase() === 'true' ? "true" : "false";
+    document.getElementById('formEscolhidoPor').value = item.escolhidoPor || "";
+    document.getElementById('formStatusProduto').value = item.statusProduto || "Ativo";
+  }
+
   toggleValorMaximo();
-  document.getElementById('modalItemForm').classList.remove('hidden');
+  validarValoresPreco();
+  document.getElementById('telaEdicaoCompleta').classList.remove('hidden');
 }
 
-function abrirModalEditar(idx) {
-  const item = listaGlobal.find(i => i.index === idx);
-  if (!item) return;
-
-  document.getElementById('modalItemTitulo').innerText = "Editar Item Completo";
-  document.getElementById('formIndex').value = item.index;
-  document.getElementById('formId').value = item.id || "";
-  document.getElementById('formItem').value = item.itemCodigo || "";
-  document.getElementById('formNome').value = item.nome || "";
-  document.getElementById('formLink').value = item.link || "";
-  document.getElementById('formCategoria').value = item.categoria || "Cozinha";
-  document.getElementById('formImagem').value = item.imagemOriginal || item.imagem || "";
-  document.getElementById('formVMin').value = item.vMinRaw || "";
-  document.getElementById('formTipoValor').value = item.tipoValor || "Único";
-  document.getElementById('formVMax').value = item.vMaxRaw || "";
-  document.getElementById('formStatus').value = item.status || "";
-  document.getElementById('formCheck').value = item.check || "";
-  document.getElementById('formEscolhidoPor').value = item.escolhidoPor || "";
-  document.getElementById('formStatusProduto').value = item.statusProduto || "Ativo";
-
-  toggleValorMaximo();
-  document.getElementById('modalItemForm').classList.remove('hidden');
+function fecharTelaEdicao() {
+  document.getElementById('telaEdicaoCompleta').classList.add('hidden');
 }
 
-function fecharModalItemForm() {
-  document.getElementById('modalItemForm').classList.add('hidden');
-}
-
-function salvarItemForm() {
+function salvarItemCompleto() {
   const index = document.getElementById('formIndex').value;
   const dadosItem = {
-    id: document.getElementById('formId').value,
     itemCodigo: document.getElementById('formItem').value,
     nome: document.getElementById('formNome').value,
     link: document.getElementById('formLink').value,
@@ -155,7 +180,7 @@ function salvarItemForm() {
     tipoValor: document.getElementById('formTipoValor').value,
     vMax: document.getElementById('formVMax').value,
     status: document.getElementById('formStatus').value,
-    check: document.getElementById('formCheck').value,
+    check: document.getElementById('formCheck').value === 'true',
     escolhidoPor: document.getElementById('formEscolhidoPor').value,
     statusProduto: document.getElementById('formStatusProduto').value
   };
@@ -167,7 +192,7 @@ function salvarItemForm() {
     mode: 'no-cors',
     body: JSON.stringify({ action: acao, linha: index, dados: dadosItem })
   }).then(() => {
-    fecharModalItemForm();
+    fecharTelaEdicao();
     document.getElementById('successMsg').innerText = "Item salvo com sucesso!";
     document.getElementById('customSuccess').classList.remove('hidden');
     carregarDadosServidor(aplicarFiltros);
@@ -239,8 +264,8 @@ function aplicarFiltros() {
   
   const order = document.getElementById('sortOrder').value;
   filtrados.sort((a, b) => {
-    const sA = a.status === 'Escolhido' ? 1 : 0;
-    const sB = b.status === 'Escolhido' ? 1 : 0;
+    const sA = (a.status === 'Escolhido' || a.check === true) ? 1 : 0;
+    const sB = (b.status === 'Escolhido' || b.check === true) ? 1 : 0;
     if (sA !== sB) return sA - sB;
     
     const pA = parseFloat(String(a.vMinRaw).replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
@@ -260,7 +285,7 @@ function renderizarCards(itens) {
   const ehAdmin = tipoPermissao !== 'convidado';
 
   itens.forEach(item => {
-    const isE = item.status === 'Escolhido' || item.statusProduto === 'Esgotado';
+    const isE = item.status === 'Escolhido' || item.check === true || item.statusProduto === 'Esgotado';
     const foraDeLinha = item.statusProduto === 'Inválido' || item.statusProduto === 'Retirado';
 
     grid.innerHTML += `
@@ -278,7 +303,7 @@ function renderizarCards(itens) {
           <div>
             ${ehAdmin ? `
               <div class="card-actions-admin">
-                <button class="btn-edit-item" onclick="abrirModalEditar(${item.index})"><i class="fas fa-edit"></i> Editar</button>
+                <button class="btn-edit-item" onclick="abrirTelaEdicao(${item.index})"><i class="fas fa-edit"></i> Editar</button>
                 <button class="btn-delete-item" onclick="excluirItem(${item.index})"><i class="fas fa-trash"></i> Excluir</button>
               </div>
             ` : ''}
