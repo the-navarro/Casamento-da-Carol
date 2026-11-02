@@ -152,9 +152,8 @@ function abrirTelaEdicao(idx = null) {
   const seletorBox = document.getElementById('seletorEdicaoContainer');
   
   if (idx === null) {
-    // Adicionar novo item: todos os campos devem aparecer obrigatoriamente
     document.getElementById('editorTitulo').innerText = "Adicionar Novo Item";
-    seletorBox.classList.add('hidden'); // Esconde o seletor pois todos são obrigatórios
+    seletorBox.classList.add('hidden');
     document.getElementById('formIndex').value = "";
     document.getElementById('formItem').value = "";
     document.getElementById('formNome').value = "";
@@ -171,7 +170,6 @@ function abrirTelaEdicao(idx = null) {
 
     document.querySelectorAll('.campo-editavel').forEach(el => el.classList.remove('hidden'));
   } else {
-    // Editar item: mostra a pergunta "O que você deseja editar?"
     document.getElementById('editorTitulo').innerText = "Editar Item";
     seletorBox.classList.remove('hidden');
     
@@ -192,7 +190,6 @@ function abrirTelaEdicao(idx = null) {
     document.getElementById('formEscolhidoPor').value = item.escolhidoPor || "";
     document.getElementById('formStatusProduto').value = item.statusProduto || "Ativo";
 
-    // Oculta todos os blocos inicialmente na edição
     checkboxes.forEach(ch => {
       ch.checked = false;
       alternarCampoEdicao(ch);
@@ -279,14 +276,12 @@ function filtrar(categoria, elemento) {
 function aplicarFiltros() {
   let filtrados = [...listaGlobal];
   
-  // Se for convidado, esconde itens com status inválido, retirado ou esgotado
   if (tipoPermissao === 'convidado') {
     filtrados = filtrados.filter(i => {
       const st = (i.statusProduto || "").trim().toLowerCase();
       return st !== 'inválido' && st !== 'invalido' && st !== 'retirado' && st !== 'esgotado';
     });
   } else {
-    // Filtro exclusivo de ADM para status do produto
     const statusProdFiltro = document.getElementById('filtroStatusProduto')?.value;
     if (statusProdFiltro && statusProdFiltro !== 'all') {
       filtrados = filtrados.filter(i => (i.statusProduto || "Ativo") === statusProdFiltro);
@@ -312,6 +307,7 @@ function aplicarFiltros() {
   
   const order = document.getElementById('sortOrder').value;
   filtrados.sort((a, b) => {
+    // Esgotado não é considerado escolhido (só o status 'Escolhido' ou check true determinam o bloqueio real)
     const sA = (a.status === 'Escolhido' || a.check === true) ? 1 : 0;
     const sB = (b.status === 'Escolhido' || b.check === true) ? 1 : 0;
     if (sA !== sB) return sA - sB;
@@ -333,12 +329,15 @@ function renderizarCards(itens) {
   const ehAdmin = tipoPermissao !== 'convidado';
 
   itens.forEach(item => {
-    const isE = item.status === 'Escolhido' || item.check === true || item.statusProduto === 'Esgotado';
+    // Esgotado não bloqueia mais o item para os convidados
+    const isE = item.status === 'Escolhido' || item.check === true;
+    const isEsgotadoAdm = item.statusProduto === 'Esgotado';
     const foraDeLinha = item.statusProduto === 'Inválido' || item.statusProduto === 'Retirado';
 
     grid.innerHTML += `
       <div class="card ${isE ? 'esgotado' : ''}">
         ${isE ? '<div class="esgotado-badge">Escolhido</div>' : ''}
+        ${ehAdmin && isEsgotadoAdm ? '<div class="status-badge-admin">Esgotado</div>' : ''}
         ${ehAdmin && foraDeLinha ? `<div class="status-badge-admin">${item.statusProduto}</div>` : ''}
         <div class="card-img-wrapper">
           <img src="${item.imagem}" class="card-img" onerror="this.src='https://via.placeholder.com/300?text=Imagem'">
