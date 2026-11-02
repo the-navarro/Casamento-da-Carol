@@ -69,7 +69,6 @@ body {
 }
 .btn-login-small:hover { background: var(--accent); color: #1A2530; }
 
-/* SPINNER ÚNICO E PADRÃO */
 .loading-spinner {
   width: 44px; height: 44px;
   border: 3px solid rgba(255, 255, 255, 0.2);
@@ -87,6 +86,7 @@ body {
   background: var(--white); border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.04);
   box-shadow: var(--shadow-sm); overflow: hidden; display: flex; flex-direction: column; position: relative; transition: var(--transition); height: 100%;
 }
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: rgba(212, 175, 55, 0.3); }
 .card.esgotado { opacity: 0.85; background: #F8FAFC; }
 .card.esgotado .card-img { filter: grayscale(40%); }
 
@@ -102,6 +102,17 @@ body {
 .card-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
 .card:hover .card-img { transform: scale(1.06); }
 
+/* BARRA DE AÇÕES NA IMAGEM (ADM) */
+.img-actions-bar {
+  position: absolute; bottom: 8px; right: 8px; display: flex; gap: 6px; z-index: 12;
+}
+.btn-img-action {
+  background: rgba(26, 37, 48, 0.85); backdrop-filter: blur(4px); color: white; border: none;
+  width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; cursor: pointer; text-decoration: none; transition: var(--transition);
+}
+.btn-img-action:hover { background: var(--accent); color: var(--navy); transform: scale(1.1); }
+
 .card-content { padding: 16px; text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
 .card-title { font-family: 'Playfair Display', serif; font-size: 0.9rem; height: 40px; overflow: hidden; color: var(--navy); font-weight: 600; line-height: 1.3; margin-bottom: 6px; }
 .price-tag { font-size: 0.85rem; color: #2A3B4D; font-weight: 700; margin-bottom: 12px; }
@@ -109,8 +120,20 @@ body {
 .card-actions-admin { display: flex; gap: 6px; margin-bottom: 8px; }
 .btn-edit-item { background: #F1F5F9; color: var(--navy); border: 1px solid #CBD5E1; padding: 7px; border-radius: 8px; font-size: 0.68rem; font-weight: 600; width: 50%; cursor: pointer; }
 .btn-delete-item { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; padding: 7px; border-radius: 8px; font-size: 0.68rem; font-weight: 600; width: 50%; cursor: pointer; }
-.btn-shopee { background: transparent; color: var(--navy); border: 1px solid var(--navy); padding: 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 600; width: 100%; cursor: pointer; text-decoration: none; display: block; margin-bottom: 8px; box-sizing: border-box; }
-.btn-presente { background: var(--navy); color: white; border: none; padding: 9px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; width: 100%; cursor: pointer; }
+
+.btn-shopee {
+  background: transparent; color: var(--navy); border: 1px solid var(--navy);
+  padding: 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 600;
+  width: 100%; cursor: pointer; text-decoration: none; display: block;
+  margin-bottom: 8px; box-sizing: border-box; transition: var(--transition);
+}
+.btn-shopee:hover { background: var(--navy); color: white; }
+
+.btn-presente {
+  background: var(--navy); color: white; border: none; padding: 9px; border-radius: 8px;
+  font-size: 0.75rem; font-weight: 600; width: 100%; cursor: pointer; transition: var(--transition);
+}
+.btn-presente:hover:not(:disabled) { background: #2A3B4D; }
 .btn-presente:disabled { background: #E2E8F0; color: #94A3B8; cursor: not-allowed; }
 
 .fixed-footer {
@@ -126,7 +149,6 @@ body {
 .nav-item.active { color: #1A2530 !important; font-weight: 600; background: transparent !important; }
 .nav-item.active i { color: #1A2530 !important; transform: translateY(-2px); }
 
-/* ESTILOS DE MODO EDIÇÃO E RECADOS */
 .fullscreen-editor {
   position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
   background: var(--navy); z-index: 5000; overflow-y: auto; padding: 20px; box-sizing: border-box; color: white;
@@ -176,7 +198,6 @@ body {
 }
 .zoom-img-modal img { max-width: 90vw; max-height: 85vh; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
 
-/* LISTA DE RECADOS PARA ADM */
 .recados-list { max-height: 320px; overflow-y: auto; text-align: left; margin: 15px 0; display: flex; flex-direction: column; gap: 10px; }
 .recado-card { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
 .recado-header { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--accent); margin-bottom: 4px; font-weight: 600; }
