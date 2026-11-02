@@ -72,6 +72,7 @@ function tentarEntrar() {
 
       if (tipoPermissao !== 'convidado') {
         document.getElementById('btnAdicionarHeader')?.classList.remove('hidden');
+        document.getElementById('filtroStatusProduto')?.classList.remove('hidden');
       }
 
       aplicarFiltros();
@@ -147,11 +148,13 @@ function validarValoresPreco() {
 }
 
 function abrirTelaEdicao(idx = null) {
-  // Exibe todos os blocos caso seja um item novo, ou oculta na edição para o usuário escolher o que quer alterar
   const checkboxes = document.querySelectorAll('.selector-box input[type="checkbox"]');
+  const seletorBox = document.getElementById('seletorEdicaoContainer');
   
   if (idx === null) {
+    // Adicionar novo item: todos os campos devem aparecer obrigatoriamente
     document.getElementById('editorTitulo').innerText = "Adicionar Novo Item";
+    seletorBox.classList.add('hidden'); // Esconde o seletor pois todos são obrigatórios
     document.getElementById('formIndex').value = "";
     document.getElementById('formItem').value = "";
     document.getElementById('formNome').value = "";
@@ -163,20 +166,18 @@ function abrirTelaEdicao(idx = null) {
     document.getElementById('formTipoValor').value = "Único";
     document.getElementById('formVMax').value = "";
     document.getElementById('formStatus').value = "";
-    document.getElementById('formCheck').value = "false";
     document.getElementById('formEscolhidoPor').value = "";
     document.getElementById('formStatusProduto').value = "Ativo";
 
-    // Marca todos os checkboxes automaticamente ao adicionar novo item
-    checkboxes.forEach(ch => {
-      ch.checked = true;
-      alternarCampoEdicao(ch);
-    });
+    document.querySelectorAll('.campo-editavel').forEach(el => el.classList.remove('hidden'));
   } else {
+    // Editar item: mostra a pergunta "O que você deseja editar?"
+    document.getElementById('editorTitulo').innerText = "Editar Item";
+    seletorBox.classList.remove('hidden');
+    
     const item = listaGlobal.find(i => i.index === idx);
     if (!item) return;
 
-    document.getElementById('editorTitulo').innerText = "Editar Item Completo";
     document.getElementById('formIndex').value = item.index;
     document.getElementById('formItem').value = item.itemCodigo || "";
     document.getElementById('formNome').value = item.nome || "";
@@ -188,11 +189,10 @@ function abrirTelaEdicao(idx = null) {
     document.getElementById('formTipoValor').value = item.tipoValor || "Único";
     document.getElementById('formVMax').value = item.vMaxRaw || "";
     document.getElementById('formStatus').value = item.status || "";
-    document.getElementById('formCheck').value = String(item.check).toLowerCase() === 'true' ? "true" : "false";
     document.getElementById('formEscolhidoPor').value = item.escolhidoPor || "";
     document.getElementById('formStatusProduto').value = item.statusProduto || "Ativo";
 
-    // Desmarca todos para o adm escolher o que deseja editar
+    // Oculta todos os blocos inicialmente na edição
     checkboxes.forEach(ch => {
       ch.checked = false;
       alternarCampoEdicao(ch);
@@ -219,7 +219,6 @@ function salvarItemCompleto() {
     tipoValor: document.getElementById('formTipoValor').value,
     vMax: document.getElementById('formVMax').value,
     status: document.getElementById('formStatus').value,
-    check: document.getElementById('formCheck').value === 'true',
     escolhidoPor: document.getElementById('formEscolhidoPor').value,
     statusProduto: document.getElementById('formStatusProduto').value
   };
@@ -280,8 +279,18 @@ function filtrar(categoria, elemento) {
 function aplicarFiltros() {
   let filtrados = [...listaGlobal];
   
+  // Se for convidado, esconde itens com status inválido, retirado ou esgotado
   if (tipoPermissao === 'convidado') {
-    filtrados = filtrados.filter(i => i.statusProduto !== 'Inválido' && i.statusProduto !== 'Retirado');
+    filtrados = filtrados.filter(i => {
+      const st = (i.statusProduto || "").trim().toLowerCase();
+      return st !== 'inválido' && st !== 'invalido' && st !== 'retirado' && st !== 'esgotado';
+    });
+  } else {
+    // Filtro exclusivo de ADM para status do produto
+    const statusProdFiltro = document.getElementById('filtroStatusProduto')?.value;
+    if (statusProdFiltro && statusProdFiltro !== 'all') {
+      filtrados = filtrados.filter(i => (i.statusProduto || "Ativo") === statusProdFiltro);
+    }
   }
 
   if(categoriaAtiva !== "Todos") {
@@ -330,7 +339,7 @@ function renderizarCards(itens) {
     grid.innerHTML += `
       <div class="card ${isE ? 'esgotado' : ''}">
         ${isE ? '<div class="esgotado-badge">Escolhido</div>' : ''}
-        ${foraDeLinha ? `<div class="status-badge-admin">${item.statusProduto}</div>` : ''}
+        ${ehAdmin && foraDeLinha ? `<div class="status-badge-admin">${item.statusProduto}</div>` : ''}
         <div class="card-img-wrapper">
           <img src="${item.imagem}" class="card-img" onerror="this.src='https://via.placeholder.com/300?text=Imagem'">
         </div>
