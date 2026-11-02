@@ -1,4 +1,5 @@
-const URL_API = "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI"; // Mantenha sua URL do Apps Script
+// INSIRA AQUI A SUA URL DA API DO GOOGLE APPS SCRIPT
+const URL_API = "https://script.google.com/macros/s/AKfycbyaORFvDT1v-l9hfld8qWR6FuRBJzHasJvUKMSl0b4Dish-gbkvyjuVXtMVPXNDxtlB/exec";
 
 let usuarioAtivo = "";
 let tipoPermissao = "convidado";
@@ -6,9 +7,26 @@ let listaGlobal = [];
 let categoriaAtiva = "Todos";
 let itemSelecionado = null;
 
+// Carrega os dados via API do Apps Script assim que a página abre
 window.addEventListener('DOMContentLoaded', () => {
-  preCarregarDados();
+  carregarDadosServidor();
 });
+
+function carregarDadosServidor(callback) {
+  fetch(`${URL_API}?action=getPresentes`)
+    .then(res => res.json())
+    .then(itens => {
+      if (Array.isArray(itens)) {
+        listaGlobal = itens;
+        if (callback) callback();
+      } else {
+        console.error("Retorno inválido:", itens);
+      }
+    })
+    .catch(err => {
+      console.error("Erro ao carregar dados:", err);
+    });
+}
 
 function verificarTipoAcesso() {
   const tipo = document.getElementById('tipoAcesso').value;
@@ -21,16 +39,7 @@ function verificarTipoAcesso() {
   }
 }
 
-function preCarregarDados() {
-  fetch(`${URL_API}?action=getPresentes`)
-    .then(res => res.json())
-    .then(itens => {
-      listaGlobal = itens;
-    })
-    .catch(err => console.error("Erro no pré-carregamento:", err));
-}
-
-function entrar() {
+function tentarEntrar() {
   const inputEl = document.getElementById('nomeUser');
   const nomeDigitado = inputEl ? inputEl.value.trim() : "";
   tipoPermissao = document.getElementById('tipoAcesso').value;
@@ -38,7 +47,7 @@ function entrar() {
 
   if (tipoPermissao !== 'convidado') {
     if (senhaDigitada !== '123456') {
-      alert("Senha incorreta para acesso restrito. A senha padrão é 123456.");
+      alert("Senha incorreta para acesso restrito. A senha é 123456.");
       return;
     }
   }
@@ -51,27 +60,29 @@ function entrar() {
   if (loginEl) { loginEl.classList.add('hidden'); loginEl.style.display = 'none'; }
   if (loadingEl) { loadingEl.classList.remove('hidden'); loadingEl.style.display = 'flex'; }
 
+  // Garante o carregamento dos dados e os 2 segundos visuais
   setTimeout(() => {
-    if (loadingEl) { loadingEl.classList.add('hidden'); loadingEl.style.display = 'none'; }
-    
-    document.getElementById('lista')?.classList.remove('hidden');
-    document.getElementById('priceBar')?.classList.remove('hidden');
-    document.getElementById('mainFooter')?.classList.remove('hidden');
-    document.getElementById('btnRecadoHeader')?.classList.remove('hidden');
+    carregarDadosServidor(() => {
+      if (loadingEl) { loadingEl.classList.add('hidden'); loadingEl.style.display = 'none'; }
+      
+      document.getElementById('lista')?.classList.remove('hidden');
+      document.getElementById('priceBar')?.classList.remove('hidden');
+      document.getElementById('mainFooter')?.classList.remove('hidden');
+      document.getElementById('btnRecadoHeader')?.classList.remove('hidden');
 
-    // Se for noiva, noivo ou adm, exibe o botão de Adicionar Item
-    if (tipoPermissao !== 'convidado') {
-      document.getElementById('btnAdicionarHeader')?.classList.remove('hidden');
-    }
+      if (tipoPermissao !== 'convidado') {
+        document.getElementById('btnAdicionarHeader')?.classList.remove('hidden');
+      }
 
-    aplicarFiltros();
+      aplicarFiltros();
+    });
   }, 2000);
 }
 
 function toggleValorMaximo() {
   const tipoValor = document.getElementById('formTipoValor').value;
   const grupoVMax = document.getElementById('grupoValorMax');
-  if (tipoValor === 'Faixa de preço') {
+  if (tipoValor === 'Faixa de Preço') {
     grupoVMax.classList.remove('hidden');
   } else {
     grupoVMax.classList.add('hidden');
@@ -89,7 +100,7 @@ function abrirModalAdicionar() {
   document.getElementById('formCategoria').value = "Cozinha";
   document.getElementById('formImagem').value = "";
   document.getElementById('formVMin').value = "";
-  document.getElementById('formTipoValor').value = "Preço Fixo";
+  document.getElementById('formTipoValor').value = "Único";
   document.getElementById('formVMax').value = "";
   document.getElementById('formStatus').value = "Disponível";
   document.getElementById('formCheck').value = "FALSE";
@@ -113,12 +124,12 @@ function abrirModalEditar(idx) {
   document.getElementById('formCategoria').value = item.categoria || "Cozinha";
   document.getElementById('formImagem').value = item.imagemOriginal || item.imagem || "";
   document.getElementById('formVMin').value = item.vMinRaw || "";
-  document.getElementById('formTipoValor').value = item.tipoValor || "Preço Fixo";
+  document.getElementById('formTipoValor').value = item.tipoValor || "Único";
   document.getElementById('formVMax').value = item.vMaxRaw || "";
   document.getElementById('formStatus').value = item.status || "";
   document.getElementById('formCheck').value = item.check || "";
   document.getElementById('formEscolhidoPor').value = item.escolhidoPor || "";
-  document.getElementById('formStatusProduto').value = item.statusProduto || "";
+  document.getElementById('formStatusProduto').value = item.statusProduto || "Ativo";
 
   toggleValorMaximo();
   document.getElementById('modalItemForm').classList.remove('hidden');
@@ -156,7 +167,7 @@ function salvarItemForm() {
     fecharModalItemForm();
     document.getElementById('successMsg').innerText = "Item salvo com sucesso!";
     document.getElementById('customSuccess').classList.remove('hidden');
-    preCarregarDados();
+    carregarDadosServidor(aplicarFiltros);
   });
 }
 
@@ -170,7 +181,7 @@ function excluirItem(idx) {
   }).then(() => {
     document.getElementById('successMsg').innerText = "Item excluído com sucesso!";
     document.getElementById('customSuccess').classList.remove('hidden');
-    preCarregarDados();
+    carregarDadosServidor(aplicarFiltros);
   });
 }
 
@@ -202,6 +213,10 @@ function filtrar(categoria, elemento) {
 function aplicarFiltros() {
   let filtrados = [...listaGlobal];
   
+  if (tipoPermissao === 'convidado') {
+    filtrados = filtrados.filter(i => i.statusProduto !== 'Inválido' && i.statusProduto !== 'Retirado');
+  }
+
   if(categoriaAtiva !== "Todos") {
     filtrados = filtrados.filter(i => i.categoria === categoriaAtiva);
   }
@@ -209,7 +224,7 @@ function aplicarFiltros() {
   const range = document.getElementById('rangePrice').value;
   if(range !== "all") {
     filtrados = filtrados.filter(i => {
-      const v = parseFloat(i.vMinRaw.replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
+      const v = parseFloat(String(i.vMinRaw).replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
       if(range === "10-20") return v >= 10 && v <= 20;
       if(range === "20-30") return v > 20 && v <= 30;
       if(range === "30-40") return v > 30 && v <= 40;
@@ -225,8 +240,8 @@ function aplicarFiltros() {
     const sB = b.status === 'Escolhido' ? 1 : 0;
     if (sA !== sB) return sA - sB;
     
-    const pA = parseFloat(a.vMinRaw.replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
-    const pB = parseFloat(b.vMinRaw.replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
+    const pA = parseFloat(String(a.vMinRaw).replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
+    const pB = parseFloat(String(b.vMinRaw).replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
     if(order === "asc") return pA - pB;
     if(order === "desc") return pB - pA;
     return 0;
@@ -237,15 +252,18 @@ function aplicarFiltros() {
 
 function renderizarCards(itens) {
   const grid = document.getElementById('grid');
-  grid.innerHTML = itens.length ? "" : "<p style='grid-column:span 2; text-align:center; padding-top: 50px;'>Nenhum item encontrado.</p>";
+  grid.innerHTML = itens.length ? "" : "<p style='grid-column:span 2; text-align:center; padding-top: 50px; color: #64748b;'>Nenhum item encontrado.</p>";
   
   const ehAdmin = tipoPermissao !== 'convidado';
 
   itens.forEach(item => {
-    const isE = item.status === 'Escolhido';
+    const isE = item.status === 'Escolhido' || item.statusProduto === 'Esgotado';
+    const foraDeLinha = item.statusProduto === 'Inválido' || item.statusProduto === 'Retirado';
+
     grid.innerHTML += `
       <div class="card ${isE ? 'esgotado' : ''}">
         ${isE ? '<div class="esgotado-badge">Escolhido</div>' : ''}
+        ${foraDeLinha ? `<div class="status-badge-admin">${item.statusProduto}</div>` : ''}
         <div class="card-img-wrapper">
           <img src="${item.imagem}" class="card-img" onerror="this.src='https://via.placeholder.com/300?text=Imagem'">
         </div>
@@ -287,12 +305,12 @@ function confirmarAcao() {
   fetch(URL_API, {
     method: 'POST',
     mode: 'no-cors',
-    body: JSON.stringify({ action: 'escolher', linha: itemSelecionado.idx, nome: usuarioAtivo })
+    body: JSON.stringify({ action: 'escolher', linha: itemSelecionado.index || itemSelecionado.idx, nome: usuarioAtivo })
   }).then(() => {
     fecharModal();
     document.getElementById('successMsg').innerText = "Sua escolha foi registrada com sucesso.";
     document.getElementById('customSuccess').classList.remove('hidden');
-    preCarregarDados();
+    carregarDadosServidor(aplicarFiltros);
   });
 }
 
