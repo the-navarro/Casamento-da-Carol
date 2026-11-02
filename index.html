@@ -92,43 +92,56 @@
     <div class="nav-item" onclick="filtrar('Limpeza', this)"><i class="fas fa-broom"></i><span>Limpeza</span></div>
   </footer>
 
-  <!-- TELA DE EDIÇÃO COMPLETA (SUBSTITUI O MODAL) -->
+  <!-- TELA DE EDIÇÃO COMPLETA -->
   <div id="telaEdicaoCompleta" class="fullscreen-editor hidden">
     <div class="editor-container">
       
-      <!-- IMAGEM FIXA NO TOPO DA TELA DE EDIÇÃO -->
+      <!-- IMAGEM FIXA COM ZOOM AO CLICAR -->
       <div class="editor-header-sticky">
-        <img id="previewImg" src="https://via.placeholder.com/150?text=Sem+Foto" class="editor-preview-img" onerror="this.src='https://via.placeholder.com/150?text=Erro+Foto'">
-        <span style="font-size: 0.65rem; color: #cbd5e1; margin-top: 4px; display: block;">Visualização do Item</span>
+        <img id="previewImg" src="https://via.placeholder.com/150?text=Sem+Foto" class="editor-preview-img" title="Clique para ampliar" onclick="ampliarFoto()" onerror="this.src='https://via.placeholder.com/150?text=Erro+Foto'">
+        <span style="font-size: 0.65rem; color: #cbd5e1; margin-top: 4px; display: block;"><i class="fas fa-search-plus"></i> Clique na foto para ampliar</span>
       </div>
 
-      <h3 id="editorTitulo" style="font-family:'Playfair Display'; margin-top:0; text-align: center; margin-bottom: 15px;">Adicionar Item</h3>
+      <h3 id="editorTitulo" style="font-family:'Playfair Display'; margin-top:0; text-align: center; margin-bottom: 10px;">Adicionar Item</h3>
       
-      <input type="hidden" id="formIndex">
-
-      <div class="modal-form-group">
-        <label>ID (Sequencial Automático)</label>
-        <input type="text" id="formId" disabled placeholder="Gerado automaticamente">
-        <span class="form-help-text">O ID fica bloqueado para edição e segue a ordem sequencial.</span>
+      <!-- PERGUNTA DE EDIÇÃO SELETIVA -->
+      <div id="seletorEdicaoContainer" class="selector-box">
+        <p><i class="fas fa-check-square"></i> O que você deseja editar?</p>
+        <div class="checkbox-grid">
+          <label class="checkbox-label"><input type="checkbox" value="bloco-item" onchange="alternarCampoEdicao(this)"> Nome Completo</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-nome" onchange="alternarCampoEdicao(this)"> Nome Resumido</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-link" onchange="alternarCampoEdicao(this)"> Link Shopee</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-categoria" onchange="alternarCampoEdicao(this)"> Categoria</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-imagem" onchange="alternarCampoEdicao(this)"> Imagem</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-preco" onchange="alternarCampoEdicao(this)"> Preços</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-status" onchange="alternarCampoEdicao(this)"> Status Disponível</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-check" onchange="alternarCampoEdicao(this)"> Check (True/False)</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-escolhido" onchange="alternarCampoEdicao(this)"> Escolhido por</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-prodstatus" onchange="alternarCampoEdicao(this)"> Status do Produto</label>
+        </div>
       </div>
 
-      <div class="modal-form-group">
-        <label>Nome completo do item</label>
+      <input type="hidden" id="formIndex">
+      <input type="hidden" id="formImagemUrl">
+
+      <!-- CAMPOS DO FORMULÁRIO -->
+      <div id="bloco-item" class="modal-form-group campo-editavel">
+        <label><i class="fas fa-tag"></i> Nome completo do item</label>
         <input type="text" id="formItem" placeholder="Ex: Kit 10 Marmita conjunto Potes 750ml...">
       </div>
 
-      <div class="modal-form-group">
-        <label>Nome resumido (que aparecerá para os seus convidados)</label>
+      <div id="bloco-nome" class="modal-form-group campo-editavel">
+        <label><i class="fas fa-font"></i> Nome resumido</label>
         <input type="text" id="formNome" placeholder="Ex: Kit Marmitas 750ml">
       </div>
 
-      <div class="modal-form-group">
-        <label>Link</label>
+      <div id="bloco-link" class="modal-form-group campo-editavel">
+        <label><i class="fas fa-link"></i> Link</label>
         <input type="text" id="formLink" placeholder="https://shopee.com.br/...">
       </div>
 
-      <div class="modal-form-group">
-        <label>Categoria</label>
+      <div id="bloco-categoria" class="modal-form-group campo-editavel">
+        <label><i class="fas fa-folder"></i> Categoria</label>
         <select id="formCategoria">
           <option value="Cozinha">Cozinha</option>
           <option value="Quarto">Quarto</option>
@@ -137,55 +150,58 @@
         </select>
       </div>
 
-      <div class="modal-form-group">
-        <label>Imagem (Subir nesta pasta do Drive com acesso irrestrito)</label>
-        <a href="https://drive.google.com/drive/folders/1BKBm58tpW5MS7SuUd0FtSdxRcSDzEJXi" target="_blank" style="font-size:0.65rem; color:var(--accent); display:block; margin-bottom: 4px; text-decoration: underline;">Abrir pasta do Drive para upload</a>
-        <input type="text" id="formImagem" placeholder="Cole o link de compartilhamento do Drive aqui" oninput="atualizarPreviewAoDigitar(this.value)">
+      <div id="bloco-imagem" class="modal-form-group campo-editavel">
+        <label><i class="fas fa-image"></i> Imagem do Produto</label>
+        <button type="button" class="btn-upload" onclick="document.getElementById('fileUploadInput').click()">
+          <i class="fas fa-cloud-upload-alt"></i> Fazer Upload de Imagem
+        </button>
+        <input type="file" id="fileUploadInput" accept="image/*" class="hidden" onchange="processarUploadArquivo(this)">
       </div>
 
-      <div class="modal-form-group">
-        <label>Valor mínimo (Ex: 39,9)</label>
-        <input type="text" id="formVMin" placeholder="39,9" oninput="validarValoresPreco()">
+      <div id="bloco-preco">
+        <div class="modal-form-group campo-editavel">
+          <label><i class="fas fa-dollar-sign"></i> Valor mínimo</label>
+          <input type="text" id="formVMin" placeholder="R$ 39,90" oninput="validarValoresPreco()">
+        </div>
+
+        <div class="modal-form-group campo-editavel">
+          <label><i class="fas fa-sliders-h"></i> Tipo de valor</label>
+          <select id="formTipoValor" onchange="toggleValorMaximo()">
+            <option value="Único">Único (Preço fixo único na Shopee)</option>
+            <option value="Faixa de Preço">Faixa de Preço (Valor pode variar)</option>
+          </select>
+        </div>
+
+        <div id="grupoValorMax" class="modal-form-group campo-editavel hidden">
+          <label><i class="fas fa-coins"></i> Valor máximo</label>
+          <input type="text" id="formVMax" placeholder="R$ 59,90" oninput="validarValoresPreco()">
+          <span id="avisoValorMax" class="form-warning-text hidden">Atenção: O valor máximo está abaixo do valor mínimo!</span>
+        </div>
       </div>
 
-      <div class="modal-form-group">
-        <label>Tipo de valor</label>
-        <select id="formTipoValor" onchange="toggleValorMaximo()">
-          <option value="Único">Único</option>
-          <option value="Faixa de Preço">Faixa de Preço</option>
-        </select>
-        <span class="form-help-text">Obs: Valor único é quando o produto consta somente com um preço fixo na Shopee. Faixa de preço é quando o valor pode variar.</span>
-      </div>
-
-      <div id="grupoValorMax" class="modal-form-group hidden">
-        <label>Valor máximo (Ex: 59,9)</label>
-        <input type="text" id="formVMax" placeholder="59,9" oninput="validarValoresPreco()">
-        <span id="avisoValorMax" class="form-warning-text hidden">Atenção: O valor máximo está abaixo do valor mínimo!</span>
-      </div>
-
-      <div class="modal-form-group">
-        <label>Status (Deixe em branco se disponível, ou "Escolhido")</label>
+      <div id="bloco-status" class="modal-form-group campo-editavel">
+        <label><i class="fas fa-info-circle"></i> Status</label>
         <select id="formStatus">
-          <option value="">Disponível (Em branco na planilha)</option>
+          <option value="">Disponível</option>
           <option value="Escolhido">Escolhido</option>
         </select>
       </div>
 
-      <div class="modal-form-group">
-        <label>Check (Caixa de seleção true / false)</label>
+      <div id="bloco-check" class="modal-form-group campo-editavel">
+        <label><i class="fas fa-check-circle"></i> Check</label>
         <select id="formCheck">
           <option value="false">false</option>
           <option value="true">true</option>
         </select>
       </div>
 
-      <div class="modal-form-group">
-        <label>Escolhido por:</label>
-        <input type="text" id="formEscolhidoPor" placeholder="Nome do convidado que escolheu">
+      <div id="bloco-escolhido" class="modal-form-group campo-editavel">
+        <label><i class="fas fa-user"></i> Nome do convidado</label>
+        <input type="text" id="formEscolhidoPor" placeholder="Nome do convidado">
       </div>
 
-      <div class="modal-form-group">
-        <label>Status do Produto</label>
+      <div id="bloco-prodstatus" class="modal-form-group campo-editavel">
+        <label><i class="fas fa-box"></i> Status do Produto</label>
         <select id="formStatusProduto">
           <option value="Ativo">Ativo</option>
           <option value="Esgotado">Esgotado</option>
@@ -196,6 +212,13 @@
 
       <button class="btn-presente" style="background:white; color:var(--navy); margin-top:15px; padding: 14px; font-weight: 600;" onclick="salvarItemCompleto()">Salvar Alterações</button>
       <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 10px; padding: 12px;" onclick="fecharTelaEdicao()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE ZOOM DA FOTO -->
+  <div id="modalZoomFoto" class="custom-modal-overlay hidden" onclick="fecharZoomFoto()">
+    <div class="zoom-img-modal">
+      <img id="imgZoomAmpliada" src="" alt="Foto Ampliada">
     </div>
   </div>
 
