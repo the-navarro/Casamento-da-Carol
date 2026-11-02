@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+  <title>Casamento Carol & Marlon</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -10,13 +12,16 @@
 
   <header class="fixed-header">
     <div style="display: flex; align-items: center; gap: 5px;">
-      <span class="header-title">
-        Carol & Marlon
-      </span>
+      <span class="header-title">Carol & Marlon</span>
     </div>
-    <button id="btnRecadoHeader" class="btn-recado-top hidden" onclick="abrirModalRecado()">
-      <i class="fas fa-envelope"></i> Recado para os noivos
-    </button>
+    <div class="header-actions">
+      <button id="btnAdicionarHeader" class="btn-admin-top hidden" onclick="abrirModalAdicionar()">
+        <i class="fas fa-plus"></i> Novo Item
+      </button>
+      <button id="btnRecadoHeader" class="btn-recado-top hidden" onclick="abrirModalRecado()">
+        <i class="fas fa-envelope"></i> Recado
+      </button>
+    </div>
   </header>
 
   <div id="priceBar" class="price-filter-bar hidden">
@@ -36,16 +41,37 @@
     </select>
   </div>
 
+  <!-- TELA DE LOGIN APRIMORADA -->
   <div id="login" class="login-wrapper">
     <div class="login-box">
       <h1>Carol & Marlon</h1>
       <div class="login-phrase">O nosso sonho começa com a sua presença.</div>
-      <input type="text" id="nomeUser" placeholder="Como podemos te chamar?">
-      <br>
+      
+      <div class="login-input-group">
+        <label>Como podemos te chamar?</label>
+        <input type="text" id="nomeUser" placeholder="Seu nome">
+      </div>
+
+      <div class="login-input-group">
+        <label>Tipo de Acesso</label>
+        <select id="tipoAcesso" onchange="verificarTipoAcesso()">
+          <option value="convidado">Convidado</option>
+          <option value="noiva">Noiva</option>
+          <option value="noivo">Noivo</option>
+          <option value="adm">Adm</option>
+        </select>
+      </div>
+
+      <div id="grupoSenha" class="login-input-group hidden">
+        <label>Senha de Acesso</label>
+        <input type="password" id="senhaAcesso" placeholder="Digite a senha (123456)">
+      </div>
+
       <button type="button" class="btn-login-small" onclick="entrar()">Ver Presentes</button>
     </div>
   </div>
 
+  <!-- TELA DE CARREGAMENTO -->
   <div id="loadingScreen" class="login-wrapper hidden">
     <div class="login-box" style="text-align: center;">
       <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--accent); margin-bottom: 20px;"></i>
@@ -66,6 +92,92 @@
     <div class="nav-item" onclick="filtrar('Limpeza', this)"><i class="fas fa-broom"></i><span>Limpeza</span></div>
   </footer>
 
+  <!-- MODAL DE ADICIONAR / EDITAR ITEM -->
+  <div id="modalItemForm" class="custom-modal-overlay hidden">
+    <div class="custom-modal-box">
+      <h3 id="modalItemTitulo" style="font-family:'Playfair Display'; margin-top:0;">Adicionar Item</h3>
+      
+      <input type="hidden" id="formIndex">
+
+      <div class="modal-form-group">
+        <label>ID</label>
+        <input type="text" id="formId" placeholder="Ex: 1">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Item (Número ou Código)</label>
+        <input type="text" id="formItem" placeholder="Ex: Item 01">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Nome do Presente</label>
+        <input type="text" id="formNome" placeholder="Ex: Jogo de Panelas">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Link da Shopee</label>
+        <input type="text" id="formLink" placeholder="https://shopee.com.br/...">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Categoria</label>
+        <select id="formCategoria">
+          <option value="Cozinha">Cozinha</option>
+          <option value="Quarto">Quarto</option>
+          <option value="Banheiro">Banheiro</option>
+          <option value="Limpeza">Limpeza</option>
+        </select>
+      </div>
+
+      <div class="modal-form-group">
+        <label>Link da Imagem</label>
+        <input type="text" id="formImagem" placeholder="URL da imagem ou Drive">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Valor Mínimo</label>
+        <input type="text" id="formVMin" placeholder="Ex: 50,00">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Tipo de Valor</label>
+        <select id="formTipoValor" onchange="toggleValorMaximo()">
+          <option value="Preço Fixo">Preço Fixo</option>
+          <option value="Faixa de preço">Faixa de preço</option>
+        </select>
+      </div>
+
+      <div id="grupoValorMax" class="modal-form-group hidden">
+        <label>Valor Máximo</label>
+        <input type="text" id="formVMax" placeholder="Ex: 100,00">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Status</label>
+        <input type="text" id="formStatus" placeholder="Disponível / Escolhido">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Check</label>
+        <input type="text" id="formCheck" placeholder="TRUE / FALSE">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Escolhido por:</label>
+        <input type="text" id="formEscolhidoPor" placeholder="Nome do convidado">
+      </div>
+
+      <div class="modal-form-group">
+        <label>Status do Produto</label>
+        <input type="text" id="formStatusProduto" placeholder="Ativo">
+      </div>
+
+      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:10px; padding: 12px;" onclick="salvarItemForm()">Salvar Item</button>
+      <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 8px; padding: 10px;" onclick="fecharModalItemForm()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE RECADOS -->
   <div id="modalRecado" class="custom-modal-overlay hidden">
     <div class="custom-modal-box">
       <h3 style="font-family:'Playfair Display'">Deixar um Recado</h3>
@@ -75,6 +187,7 @@
     </div>
   </div>
 
+  <!-- MODAL DE CONFIRMAÇÃO DE ESCOLHA -->
   <div id="customConfirm" class="custom-modal-overlay hidden">
     <div class="custom-modal-box">
       <h3 style="font-family:'Playfair Display'">Confirmar Escolha?</h3>
@@ -84,6 +197,7 @@
     </div>
   </div>
 
+  <!-- MODAL DE SUCESSO -->
   <div id="customSuccess" class="custom-modal-overlay hidden">
     <div class="custom-modal-box">
       <i class="fas fa-check-circle" style="font-size:3rem; color:var(--accent); margin-bottom:15px;"></i>
