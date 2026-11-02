@@ -70,9 +70,20 @@ function tentarEntrar() {
       document.getElementById('mainFooter')?.classList.remove('hidden');
       document.getElementById('btnRecadoHeader')?.classList.remove('hidden');
 
+      const iconeRecado = document.getElementById('iconeBotaoRecado');
+      const textoRecado = document.getElementById('textoBotaoRecado');
+
       if (tipoPermissao !== 'convidado') {
         document.getElementById('btnAdicionarHeader')?.classList.remove('hidden');
         document.getElementById('filtroStatusProduto')?.classList.remove('hidden');
+        
+        // Configura o botão do topo para Administradores/Noivos verem os recados
+        iconeRecado.className = "fas fa-envelope-open-text";
+        textoRecado.innerText = "Ver Recados";
+      } else {
+        // Configura para convidados mandarem recado
+        iconeRecado.className = "fas fa-envelope";
+        textoRecado.innerText = "Recado";
       }
 
       aplicarFiltros();
@@ -94,6 +105,7 @@ function processarUploadArquivo(input) {
   if (input.files && input.files[0]) {
     const file = input.files[0];
     const reader = new FileReader();
+    const linhaAtual = document.getElementById('formIndex').value;
     
     document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Enviando...";
 
@@ -102,7 +114,12 @@ function processarUploadArquivo(input) {
       fetch(URL_API, {
         method: 'POST',
         mode: 'no-cors',
-        body: JSON.stringify({ action: 'uploadImagem', arquivoBase64: base64Data, nomeArquivo: file.name })
+        body: JSON.stringify({ 
+          action: 'uploadImagem', 
+          arquivoBase64: base64Data, 
+          nomeArquivo: file.name,
+          linha: linhaAtual 
+        })
       }).then(() => {
         document.getElementById('previewImg').src = base64Data;
         document.getElementById('formImagemUrl').value = base64Data;
@@ -248,6 +265,15 @@ function excluirItem(idx) {
   });
 }
 
+// CONTROLE DE RECADOS (CONVIDADO VS ADM)
+function clicarBotaoRecados() {
+  if (tipoPermissao === 'convidado') {
+    abrirModalRecado();
+  } else {
+    abrirModalVerRecados();
+  }
+}
+
 function abrirModalRecado() { document.getElementById('modalRecado').classList.remove('hidden'); }
 function fecharModalRecado() { document.getElementById('modalRecado').classList.add('hidden'); document.getElementById('txtRecado').value = ""; }
 
@@ -264,6 +290,40 @@ function enviarRecado() {
     document.getElementById('successMsg').innerText = "Seu recado foi enviado com sucesso!";
     document.getElementById('customSuccess').classList.remove('hidden');
   });
+}
+
+function abrirModalVerRecados() {
+  const modal = document.getElementById('modalVerRecados');
+  const container = document.getElementById('listaRecadosAdmin');
+  container.innerHTML = '<p style="text-align: center; color: #cbd5e1; font-size: 0.8rem;">Carregando recados...</p>';
+  modal.classList.remove('hidden');
+
+  fetch(`${URL_API}?action=getRecados`)
+    .then(res => res.json())
+    .then(recados => {
+      if (Array.isArray(recados) && recados.length > 0) {
+        container.innerHTML = "";
+        recados.forEach(r => {
+          container.innerHTML += `
+            <div class="recado-card">
+              <div class="recado-header">
+                <span><i class="fas fa-user"></i> ${r.nome}</span>
+                <span>${r.data}</span>
+              </div>
+              <div class="recado-body">"${r.recado}"</div>
+            </div>`;
+        });
+      } else {
+        container.innerHTML = '<p style="text-align: center; color: #cbd5e1; font-size: 0.8rem;">Nenhum recado encontrado ainda.</p>';
+      }
+    })
+    .catch(() => {
+      container.innerHTML = '<p style="text-align: center; color: #fca5a5; font-size: 0.8rem;">Erro ao carregar recados.</p>';
+    });
+}
+
+function fecharModalVerRecados() {
+  document.getElementById('modalVerRecados').classList.add('hidden');
 }
 
 function filtrar(categoria, elemento) {
@@ -307,7 +367,6 @@ function aplicarFiltros() {
   
   const order = document.getElementById('sortOrder').value;
   filtrados.sort((a, b) => {
-    // Esgotado não é considerado escolhido (só o status 'Escolhido' ou check true determinam o bloqueio real)
     const sA = (a.status === 'Escolhido' || a.check === true) ? 1 : 0;
     const sB = (b.status === 'Escolhido' || b.check === true) ? 1 : 0;
     if (sA !== sB) return sA - sB;
@@ -329,7 +388,6 @@ function renderizarCards(itens) {
   const ehAdmin = tipoPermissao !== 'convidado';
 
   itens.forEach(item => {
-    // Esgotado não bloqueia mais o item para os convidados
     const isE = item.status === 'Escolhido' || item.check === true;
     const isEsgotadoAdm = item.statusProduto === 'Esgotado';
     const foraDeLinha = item.statusProduto === 'Inválido' || item.statusProduto === 'Retirado';
