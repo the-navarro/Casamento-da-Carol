@@ -39,6 +39,15 @@
       <option value="40-50">R$ 40 - R$ 50</option>
       <option value="50-100">R$ 50 - R$ 100</option>
     </select>
+
+    <!-- FILTRO EXCLUSIVO PARA ADM / NOIVO / NOIVA -->
+    <select id="filtroStatusProduto" class="hidden" onchange="aplicarFiltros()">
+      <option value="all">Status Produto</option>
+      <option value="Ativo">Ativo</option>
+      <option value="Esgotado">Esgotado</option>
+      <option value="Inválido">Inválido</option>
+      <option value="Retirado">Retirado</option>
+    </select>
   </div>
 
   <!-- TELA DE LOGIN -->
@@ -74,7 +83,7 @@
   <!-- TELA DE CARREGAMENTO -->
   <div id="loadingScreen" class="login-wrapper hidden">
     <div class="login-box" style="text-align: center;">
-      <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--accent); margin-bottom: 20px;"></i>
+      <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 20px;"></i>
       <h2 style="font-family: 'Playfair Display', serif; margin: 0 0 10px 0; color: #fff;">Preparando tudo...</h2>
       <p style="font-size: 0.85rem; opacity: 0.8; margin: 0; color: #cbd5e1;">Carregando os presentes com carinho para você.</p>
     </div>
@@ -96,17 +105,15 @@
   <div id="telaEdicaoCompleta" class="fullscreen-editor hidden">
     <div class="editor-container">
       
-      <!-- IMAGEM FIXA COM ZOOM AO CLICAR -->
       <div class="editor-header-sticky">
         <img id="previewImg" src="https://via.placeholder.com/150?text=Sem+Foto" class="editor-preview-img" title="Clique para ampliar" onclick="ampliarFoto()" onerror="this.src='https://via.placeholder.com/150?text=Erro+Foto'">
-        <span style="font-size: 0.65rem; color: #cbd5e1; margin-top: 4px; display: block;"><i class="fas fa-search-plus"></i> Clique na foto para ampliar</span>
+        <span style="font-size: 0.6rem; color: #cbd5e1; margin-top: 2px; display: block;"><i class="fas fa-search-plus"></i> Ampliar foto</span>
       </div>
 
-      <h3 id="editorTitulo" style="font-family:'Playfair Display'; margin-top:0; text-align: center; margin-bottom: 10px;">Adicionar Item</h3>
+      <h3 id="editorTitulo" style="font-family:'Playfair Display'; margin-top:0; text-align: center; font-size: 1rem; margin-bottom: 8px;">Adicionar Item</h3>
       
-      <!-- PERGUNTA DE EDIÇÃO SELETIVA -->
       <div id="seletorEdicaoContainer" class="selector-box">
-        <p><i class="fas fa-check-square"></i> O que você deseja editar?</p>
+        <p><i class="fas fa-check-square"></i> O que deseja editar?</p>
         <div class="checkbox-grid">
           <label class="checkbox-label"><input type="checkbox" value="bloco-item" onchange="alternarCampoEdicao(this)"> Nome Completo</label>
           <label class="checkbox-label"><input type="checkbox" value="bloco-nome" onchange="alternarCampoEdicao(this)"> Nome Resumido</label>
@@ -114,25 +121,23 @@
           <label class="checkbox-label"><input type="checkbox" value="bloco-categoria" onchange="alternarCampoEdicao(this)"> Categoria</label>
           <label class="checkbox-label"><input type="checkbox" value="bloco-imagem" onchange="alternarCampoEdicao(this)"> Imagem</label>
           <label class="checkbox-label"><input type="checkbox" value="bloco-preco" onchange="alternarCampoEdicao(this)"> Preços</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-status" onchange="alternarCampoEdicao(this)"> Status Disponível</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-check" onchange="alternarCampoEdicao(this)"> Check (True/False)</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-escolhido" onchange="alternarCampoEdicao(this)"> Escolhido por</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-prodstatus" onchange="alternarCampoEdicao(this)"> Status do Produto</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-status" onchange="alternarCampoEdicao(this)"> Status</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-escolhido" onchange="alternarCampoEdicao(this)"> Convidado</label>
+          <label class="checkbox-label"><input type="checkbox" value="bloco-prodstatus" onchange="alternarCampoEdicao(this)"> Status Produto</label>
         </div>
       </div>
 
       <input type="hidden" id="formIndex">
       <input type="hidden" id="formImagemUrl">
 
-      <!-- CAMPOS DO FORMULÁRIO -->
       <div id="bloco-item" class="modal-form-group campo-editavel">
         <label><i class="fas fa-tag"></i> Nome completo do item</label>
-        <input type="text" id="formItem" placeholder="Ex: Kit 10 Marmita conjunto Potes 750ml...">
+        <input type="text" id="formItem" placeholder="Nome completo na Shopee">
       </div>
 
       <div id="bloco-nome" class="modal-form-group campo-editavel">
         <label><i class="fas fa-font"></i> Nome resumido</label>
-        <input type="text" id="formNome" placeholder="Ex: Kit Marmitas 750ml">
+        <input type="text" id="formNome" placeholder="Nome para os convidados">
       </div>
 
       <div id="bloco-link" class="modal-form-group campo-editavel">
@@ -153,7 +158,7 @@
       <div id="bloco-imagem" class="modal-form-group campo-editavel">
         <label><i class="fas fa-image"></i> Imagem do Produto</label>
         <button type="button" class="btn-upload" onclick="document.getElementById('fileUploadInput').click()">
-          <i class="fas fa-cloud-upload-alt"></i> Fazer Upload de Imagem
+          <i class="fas fa-cloud-upload-alt"></i> Enviar Imagem
         </button>
         <input type="file" id="fileUploadInput" accept="image/*" class="hidden" onchange="processarUploadArquivo(this)">
       </div>
@@ -161,21 +166,21 @@
       <div id="bloco-preco">
         <div class="modal-form-group campo-editavel">
           <label><i class="fas fa-dollar-sign"></i> Valor mínimo</label>
-          <input type="text" id="formVMin" placeholder="R$ 39,90" oninput="validarValoresPreco()">
+          <input type="text" id="formVMin" placeholder="39,90" oninput="validarValoresPreco()">
         </div>
 
         <div class="modal-form-group campo-editavel">
           <label><i class="fas fa-sliders-h"></i> Tipo de valor</label>
           <select id="formTipoValor" onchange="toggleValorMaximo()">
-            <option value="Único">Único (Preço fixo único na Shopee)</option>
-            <option value="Faixa de Preço">Faixa de Preço (Valor pode variar)</option>
+            <option value="Único">Único (Preço fixo)</option>
+            <option value="Faixa de Preço">Faixa de Preço (Variável)</option>
           </select>
         </div>
 
         <div id="grupoValorMax" class="modal-form-group campo-editavel hidden">
           <label><i class="fas fa-coins"></i> Valor máximo</label>
-          <input type="text" id="formVMax" placeholder="R$ 59,90" oninput="validarValoresPreco()">
-          <span id="avisoValorMax" class="form-warning-text hidden">Atenção: O valor máximo está abaixo do valor mínimo!</span>
+          <input type="text" id="formVMax" placeholder="59,90" oninput="validarValoresPreco()">
+          <span id="avisoValorMax" class="form-warning-text hidden">Atenção: O valor máximo está abaixo do mínimo!</span>
         </div>
       </div>
 
@@ -184,14 +189,6 @@
         <select id="formStatus">
           <option value="">Disponível</option>
           <option value="Escolhido">Escolhido</option>
-        </select>
-      </div>
-
-      <div id="bloco-check" class="modal-form-group campo-editavel">
-        <label><i class="fas fa-check-circle"></i> Check</label>
-        <select id="formCheck">
-          <option value="false">false</option>
-          <option value="true">true</option>
         </select>
       </div>
 
@@ -210,8 +207,8 @@
         </select>
       </div>
 
-      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:15px; padding: 14px; font-weight: 600;" onclick="salvarItemCompleto()">Salvar Alterações</button>
-      <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 10px; padding: 12px;" onclick="fecharTelaEdicao()">Cancelar</button>
+      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:12px; padding: 12px; font-weight: 600;" onclick="salvarItemCompleto()">Salvar Alterações</button>
+      <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 8px; padding: 10px;" onclick="fecharTelaEdicao()">Cancelar</button>
     </div>
   </div>
 
