@@ -109,25 +109,28 @@ function processarUploadArquivo(input) {
 
     reader.onload = function(e) {
       const base64Data = e.target.result;
+      
       fetch(URL_API, {
         method: 'POST',
-        mode: 'no-cors',
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ 
           action: 'uploadImagem', 
           arquivoBase64: base64Data, 
           nomeArquivo: file.name,
           linha: linhaAtual 
         })
-      }).then(() => {
-        carregarDadosServidor(() => {
-          if (linhaAtual) {
-            const itemAtualizado = listaGlobal.find(i => i.index === parseInt(linhaAtual));
-            if (itemAtualizado) {
-              document.getElementById('previewImg').src = itemAtualizado.imagem;
-              document.getElementById('formImagemUrl').value = itemAtualizado.imagemOriginal;
-            }
-          }
-        });
+      })
+      .then(res => res.json())
+      .then(resposta => {
+        if (resposta.status === "success") {
+          document.getElementById('previewImg').src = resposta.url.replace("view?usp=drive_link", "preview");
+          document.getElementById('formImagemUrl').value = resposta.url;
+          carregarDadosServidor();
+        }
+      })
+      .catch(err => {
+        console.error("Erro no upload:", err);
+        alert("Erro ao enviar a imagem para o Drive.");
       });
     };
     reader.readAsDataURL(file);
@@ -245,7 +248,6 @@ function salvarItemCompleto() {
 
   fetch(URL_API, {
     method: 'POST',
-    mode: 'no-cors',
     body: JSON.stringify({ action: acao, linha: index, dados: dadosItem })
   }).then(() => {
     fecharTelaEdicao();
@@ -260,7 +262,6 @@ function excluirItem(idx) {
 
   fetch(URL_API, {
     method: 'POST',
-    mode: 'no-cors',
     body: JSON.stringify({ action: 'excluir', linha: idx })
   }).then(() => {
     document.getElementById('successMsg').innerText = "Item excluído com sucesso!";
@@ -286,7 +287,6 @@ function enviarRecado() {
   
   fetch(URL_API, {
     method: 'POST',
-    mode: 'no-cors',
     body: JSON.stringify({ action: 'recado', texto: texto, nome: usuarioAtivo })
   }).then(() => {
     fecharModalRecado();
@@ -394,10 +394,6 @@ function renderizarCards(itens) {
     const isE = item.status === 'Escolhido' || item.check === true;
     const isEsgotadoAdm = item.statusProduto === 'Esgotado';
     const foraDeLinha = item.statusProduto === 'Inválido' || item.statusProduto === 'Retirado';
-    
-    const urlLens = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(item.imagem)}`;
-    const textWhats = encodeURIComponent(`Olá! Gostaria de pesquisar este item do casamento: ${item.nome} - ${item.imagem}`);
-    const urlWhats = `https://api.whatsapp.com/send?text=${textWhats}`;
 
     grid.innerHTML += `
       <div class="card ${isE ? 'esgotado' : ''}">
@@ -408,14 +404,8 @@ function renderizarCards(itens) {
           <img src="${item.imagem}" class="card-img" onerror="this.src='https://via.placeholder.com/300?text=Imagem'">
           ${ehAdmin ? `
             <div class="img-actions-bar">
-              <a href="${item.imagem}" download="presente.jpg" target="_blank" class="btn-img-action" title="Download">
+              <a href="${item.imagem}" download="presente.jpg" target="_blank" class="btn-img-action" title="Baixar Imagem">
                 <i class="fas fa-download"></i>
-              </a>
-              <a href="${urlLens}" target="_blank" class="btn-img-action" title="Google Lens">
-                <i class="fas fa-camera"></i>
-              </a>
-              <a href="${urlWhats}" target="_blank" class="btn-img-action" title="Compartilhar no WhatsApp">
-                <i class="fab fa-whatsapp"></i>
               </a>
             </div>
           ` : ''}
@@ -457,7 +447,6 @@ function confirmarAcao() {
   
   fetch(URL_API, {
     method: 'POST',
-    mode: 'no-cors',
     body: JSON.stringify({ action: 'escolher', linha: itemSelecionado.idx, nome: usuarioAtivo })
   }).then(() => {
     fecharModal();
