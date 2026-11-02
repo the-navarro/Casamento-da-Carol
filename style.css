@@ -84,7 +84,7 @@ body {
   box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.25);
 }
 
-/* TELA DE LOGIN (SEM GRADIENTE, CORES SÓLIDAS) */
+/* TELA DE LOGIN */
 .login-wrapper {
   height: 100vh; display: flex; align-items: center; justify-content: center;
   position: fixed; top: 0; left: 0; width: 100%; 
@@ -229,7 +229,7 @@ body {
   box-shadow: none;
 }
 
-/* RODAPÉ EM BLUR COM ÍCONES CORRIGIDOS E MINIMALISTAS */
+/* RODAPÉ EM BLUR COM ÍCONES MINIMALISTAS */
 .fixed-footer {
   position: fixed; bottom: 0; left: 0; width: 100%; height: 72px;
   background: rgba(10, 25, 47, 0.75); 
@@ -249,13 +249,12 @@ body {
   letter-spacing: 0.3px;
 }
 
-/* Correção para evitar bugs/retângulos e manter visual minimalista */
 .nav-item i { 
   font-size: 1.1rem; 
   margin-bottom: 3px; 
   transition: var(--transition); 
   font-family: "Font Awesome 6 Free";
-  font-weight: 900; /* Força o carregamento correto dos ícones sólidos */
+  font-weight: 900;
 }
 
 .nav-item:hover { 
@@ -263,7 +262,6 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Item Selecionado legível e destacado */
 .nav-item.active { 
   color: var(--accent); 
   font-weight: 500; 
@@ -275,7 +273,7 @@ body {
   filter: drop-shadow(0 2px 6px rgba(100, 255, 218, 0.4));
 }
 
-/* MODAIS COM EFEITO DE VIDRO */
+/* MODAIS */
 .custom-modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(6, 15, 29, 0.8); backdrop-filter: blur(12px);
@@ -304,7 +302,12 @@ body {
   box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.25);
 }
 
-.hidden { display: none !important; }
+.hidden { 
+  display: none !important; 
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -315,7 +318,6 @@ body {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* RESPONSIVIDADE MOBILE FOCADA */
 @media (max-width: 480px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);
@@ -330,13 +332,4 @@ body {
   .grid {
     grid-template-columns: 1fr;
   }
-}
-/* Animação do ícone de carregamento */
-.fa-spin {
-  animation: fa-spin 1s infinite linear;
-}
-
-@keyframes fa-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
