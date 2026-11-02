@@ -85,9 +85,48 @@ function converterLinkDriveParaExibicao(link) {
   return idMatch ? "https://lh3.googleusercontent.com/d/" + idMatch[0] : link;
 }
 
-function atualizarPreviewAoDigitar(link) {
-  const urlFinal = converterLinkDriveParaExibicao(link);
-  document.getElementById('previewImg').src = urlFinal;
+function ampliarFoto() {
+  const src = document.getElementById('previewImg').src;
+  document.getElementById('imgZoomAmpliada').src = src;
+  document.getElementById('modalZoomFoto').classList.remove('hidden');
+}
+
+function fecharZoomFoto() {
+  document.getElementById('modalZoomFoto').classList.add('hidden');
+}
+
+function processarUploadArquivo(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    const reader = new FileReader();
+    
+    document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Enviando...";
+
+    reader.onload = function(e) {
+      const base64Data = e.target.result;
+      fetch(URL_API, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({ action: 'uploadImagem', arquivoBase64: base64Data, nomeArquivo: file.name })
+      }).then(() => {
+        // Como o no-cors não retorna o JSON direto, fazemos uma prévia local e recarregamos em segundo plano
+        document.getElementById('previewImg').src = base64Data;
+        document.getElementById('formImagemUrl').value = base64Data;
+        setTimeout(() => carregarDadosServidor(), 3000);
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function alternarCampoEdicao(checkbox) {
+  const blocoId = checkbox.value;
+  const blocoEl = document.getElementById(blocoId);
+  if (checkbox.checked) {
+    blocoEl.classList.remove('hidden');
+  } else {
+    blocoEl.classList.add('hidden');
+  }
 }
 
 function toggleValorMaximo() {
@@ -103,14 +142,11 @@ function toggleValorMaximo() {
 }
 
 function validarValoresPreco() {
-  const vMinStr = document.getElementById('formVMin').value.replace(',', '.');
-  const vMaxStr = document.getElementById('formVMax').value.replace(',', '.');
+  const vMin = parseFloat(document.getElementById('formVMin').value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+  const vMax = parseFloat(document.getElementById('formVMax').value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
   const aviso = document.getElementById('avisoValorMax');
 
-  const vMin = parseFloat(vMinStr);
-  const vMax = parseFloat(vMaxStr);
-
-  if (!isNaN(vMin) && !isNaN(vMax) && vMax < vMin) {
+  if (vMax > 0 && vMax < vMin) {
     aviso.classList.remove('hidden');
   } else {
     aviso.classList.add('hidden');
@@ -118,17 +154,19 @@ function validarValoresPreco() {
 }
 
 function abrirTelaEdicao(idx = null) {
+  // Esconde todos os campos por padrão para o usuário escolher o que quer editar
+  document.querySelectorAll('.campo-editavel').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.selector-box input[type="checkbox"]').forEach(ch => ch.checked = false);
+
   if (idx === null) {
-    // Adicionar novo item
     document.getElementById('editorTitulo').innerText = "Adicionar Novo Item";
     document.getElementById('formIndex').value = "";
-    document.getElementById('formId').value = "(Automático)";
     document.getElementById('formItem').value = "";
     document.getElementById('formNome').value = "";
     document.getElementById('formLink').value = "";
     document.getElementById('formCategoria').value = "Cozinha";
-    document.getElementById('formImagem').value = "";
     document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Sem+Foto";
+    document.getElementById('formImagemUrl').value = "";
     document.getElementById('formVMin').value = "";
     document.getElementById('formTipoValor').value = "Único";
     document.getElementById('formVMax').value = "";
@@ -137,19 +175,17 @@ function abrirTelaEdicao(idx = null) {
     document.getElementById('formEscolhidoPor').value = "";
     document.getElementById('formStatusProduto').value = "Ativo";
   } else {
-    // Editar item existente
     const item = listaGlobal.find(i => i.index === idx);
     if (!item) return;
 
     document.getElementById('editorTitulo').innerText = "Editar Item Completo";
     document.getElementById('formIndex').value = item.index;
-    document.getElementById('formId').value = item.id || "";
     document.getElementById('formItem').value = item.itemCodigo || "";
     document.getElementById('formNome').value = item.nome || "";
     document.getElementById('formLink').value = item.link || "";
     document.getElementById('formCategoria').value = item.categoria || "Cozinha";
-    document.getElementById('formImagem').value = item.imagemOriginal || "";
     document.getElementById('previewImg').src = item.imagem || "https://via.placeholder.com/150?text=Sem+Foto";
+    document.getElementById('formImagemUrl').value = item.imagemOriginal || "";
     document.getElementById('formVMin').value = item.vMinRaw || "";
     document.getElementById('formTipoValor').value = item.tipoValor || "Único";
     document.getElementById('formVMax').value = item.vMaxRaw || "";
@@ -160,7 +196,6 @@ function abrirTelaEdicao(idx = null) {
   }
 
   toggleValorMaximo();
-  validarValoresPreco();
   document.getElementById('telaEdicaoCompleta').classList.remove('hidden');
 }
 
@@ -175,7 +210,7 @@ function salvarItemCompleto() {
     nome: document.getElementById('formNome').value,
     link: document.getElementById('formLink').value,
     categoria: document.getElementById('formCategoria').value,
-    imagem: document.getElementById('formImagem').value,
+    imagem: document.getElementById('formImagemUrl').value,
     vMin: document.getElementById('formVMin').value,
     tipoValor: document.getElementById('formTipoValor').value,
     vMax: document.getElementById('formVMax').value,
