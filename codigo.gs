@@ -77,26 +77,26 @@ function getPresentesData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheets()[0]; 
   const dados = sheet.getDataRange().getValues();
-  dados.shift(); // Remove cabeçalho
+  dados.shift(); // Remove o cabeçalho
   
   return dados.map((linha, index) => {
     return {
-      id: linha[0],
-      itemCodigo: linha[1],
-      nome: linha[2], 
-      link: linha[3], 
-      categoria: linha[4], 
-      imagemOriginal: linha[5],
+      id: linha[0],             // ID
+      itemCodigo: linha[1],     // Item
+      nome: linha[2],           // Nome
+      link: linha[3],           // Link
+      categoria: linha[4],      // Categoria
+      imagemOriginal: linha[5], // Imagem
       imagem: converterLinkDrive(linha[5]), 
-      vMinRaw: linha[6],
+      vMinRaw: linha[6],        // Valor Mínimo
       vMin: formatarMoeda(linha[6]),
-      vMaxRaw: linha[7],
+      vMaxRaw: linha[7],        // Valor Máximo
       vMax: formatarMoeda(linha[7]),
-      tipoValor: linha[8], 
-      status: linha[9], 
-      check: linha[10],
-      escolhidoPor: linha[11],
-      statusProduto: linha[12],
+      tipoValor: linha[8],      // Tipo de Valor
+      status: linha[9],         // Status
+      check: linha[10],         // Check
+      escolhidoPor: linha[11],  // Escolhido por:
+      statusProduto: linha[12], // Status do Produto
       index: index + 2
     };
   }).filter(p => p.nome !== "");
