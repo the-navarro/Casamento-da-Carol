@@ -79,12 +79,6 @@ function tentarEntrar() {
   });
 }
 
-function converterLinkDriveParaExibicao(link) {
-  if (!link || typeof link !== 'string') return "https://via.placeholder.com/150?text=Sem+Foto";
-  const idMatch = link.match(/[-\w]{25,}/);
-  return idMatch ? "https://lh3.googleusercontent.com/d/" + idMatch[0] : link;
-}
-
 function ampliarFoto() {
   const src = document.getElementById('previewImg').src;
   document.getElementById('imgZoomAmpliada').src = src;
@@ -109,7 +103,6 @@ function processarUploadArquivo(input) {
         mode: 'no-cors',
         body: JSON.stringify({ action: 'uploadImagem', arquivoBase64: base64Data, nomeArquivo: file.name })
       }).then(() => {
-        // Como o no-cors não retorna o JSON direto, fazemos uma prévia local e recarregamos em segundo plano
         document.getElementById('previewImg').src = base64Data;
         document.getElementById('formImagemUrl').value = base64Data;
         setTimeout(() => carregarDadosServidor(), 3000);
@@ -154,10 +147,9 @@ function validarValoresPreco() {
 }
 
 function abrirTelaEdicao(idx = null) {
-  // Esconde todos os campos por padrão para o usuário escolher o que quer editar
-  document.querySelectorAll('.campo-editavel').forEach(el => el.classList.add('hidden'));
-  document.querySelectorAll('.selector-box input[type="checkbox"]').forEach(ch => ch.checked = false);
-
+  // Exibe todos os blocos caso seja um item novo, ou oculta na edição para o usuário escolher o que quer alterar
+  const checkboxes = document.querySelectorAll('.selector-box input[type="checkbox"]');
+  
   if (idx === null) {
     document.getElementById('editorTitulo').innerText = "Adicionar Novo Item";
     document.getElementById('formIndex').value = "";
@@ -174,6 +166,12 @@ function abrirTelaEdicao(idx = null) {
     document.getElementById('formCheck').value = "false";
     document.getElementById('formEscolhidoPor').value = "";
     document.getElementById('formStatusProduto').value = "Ativo";
+
+    // Marca todos os checkboxes automaticamente ao adicionar novo item
+    checkboxes.forEach(ch => {
+      ch.checked = true;
+      alternarCampoEdicao(ch);
+    });
   } else {
     const item = listaGlobal.find(i => i.index === idx);
     if (!item) return;
@@ -193,6 +191,12 @@ function abrirTelaEdicao(idx = null) {
     document.getElementById('formCheck').value = String(item.check).toLowerCase() === 'true' ? "true" : "false";
     document.getElementById('formEscolhidoPor').value = item.escolhidoPor || "";
     document.getElementById('formStatusProduto').value = item.statusProduto || "Ativo";
+
+    // Desmarca todos para o adm escolher o que deseja editar
+    checkboxes.forEach(ch => {
+      ch.checked = false;
+      alternarCampoEdicao(ch);
+    });
   }
 
   toggleValorMaximo();
