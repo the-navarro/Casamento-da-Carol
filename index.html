@@ -18,8 +18,8 @@
       <button id="btnAdicionarHeader" class="btn-admin-top hidden" onclick="abrirTelaEdicao()">
         <i class="fas fa-plus"></i> Novo Item
       </button>
-      <button id="btnRecadoHeader" class="btn-recado-top hidden" onclick="abrirModalRecado()">
-        <i class="fas fa-envelope"></i> Recado
+      <button id="btnRecadoHeader" class="btn-recado-top hidden" onclick="clicarBotaoRecados()">
+        <i id="iconeBotaoRecado" class="fas fa-envelope"></i> <span id="textoBotaoRecado">Recado</span>
       </button>
     </div>
   </header>
@@ -40,7 +40,6 @@
       <option value="50-100">R$ 50 - R$ 100</option>
     </select>
 
-    <!-- FILTRO EXCLUSIVO PARA ADM / NOIVO / NOIVA -->
     <select id="filtroStatusProduto" class="hidden" onchange="aplicarFiltros()">
       <option value="all">Status Produto</option>
       <option value="Ativo">Ativo</option>
@@ -83,7 +82,7 @@
   <!-- TELA DE CARREGAMENTO -->
   <div id="loadingScreen" class="login-wrapper hidden">
     <div class="login-box" style="text-align: center;">
-      <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 20px;"></i>
+      <div class="loading-spinner"></div>
       <h2 style="font-family: 'Playfair Display', serif; margin: 0 0 10px 0; color: #fff;">Preparando tudo...</h2>
       <p style="font-size: 0.85rem; opacity: 0.8; margin: 0; color: #cbd5e1;">Carregando os presentes com carinho para você.</p>
     </div>
@@ -158,18 +157,18 @@
       <div id="bloco-imagem" class="modal-form-group campo-editavel">
         <label><i class="fas fa-image"></i> Imagem do Produto</label>
         <button type="button" class="btn-upload" onclick="document.getElementById('fileUploadInput').click()">
-          <i class="fas fa-cloud-upload-alt"></i> Enviar Imagem
+          <i class="fas fa-cloud-upload-alt"></i> Enviar Imagem (Drive)
         </button>
         <input type="file" id="fileUploadInput" accept="image/*" class="hidden" onchange="processarUploadArquivo(this)">
       </div>
 
-      <div id="bloco-preco">
-        <div class="modal-form-group campo-editavel">
+      <div id="bloco-preco" class="campo-editavel">
+        <div class="modal-form-group">
           <label><i class="fas fa-dollar-sign"></i> Valor mínimo</label>
-          <input type="text" id="formVMin" placeholder="39,90" oninput="validarValoresPreco()">
+          <input type="text" id="formVMin" placeholder="R$ 39,90" oninput="validarValoresPreco()">
         </div>
 
-        <div class="modal-form-group campo-editavel">
+        <div class="modal-form-group">
           <label><i class="fas fa-sliders-h"></i> Tipo de valor</label>
           <select id="formTipoValor" onchange="toggleValorMaximo()">
             <option value="Único">Único (Preço fixo)</option>
@@ -177,9 +176,9 @@
           </select>
         </div>
 
-        <div id="grupoValorMax" class="modal-form-group campo-editavel hidden">
+        <div id="grupoValorMax" class="modal-form-group hidden">
           <label><i class="fas fa-coins"></i> Valor máximo</label>
-          <input type="text" id="formVMax" placeholder="59,90" oninput="validarValoresPreco()">
+          <input type="text" id="formVMax" placeholder="R$ 59,90" oninput="validarValoresPreco()">
           <span id="avisoValorMax" class="form-warning-text hidden">Atenção: O valor máximo está abaixo do mínimo!</span>
         </div>
       </div>
@@ -219,13 +218,24 @@
     </div>
   </div>
 
-  <!-- MODAL DE RECADOS -->
+  <!-- MODAL DE RECADOS PARA CONVIDADOS (ENVIAR) -->
   <div id="modalRecado" class="custom-modal-overlay hidden">
     <div class="custom-modal-box">
       <h3 style="font-family:'Playfair Display'">Deixar um Recado</h3>
-      <textarea id="txtRecado" placeholder="Escreva aqui seu recado para os noivos..."></textarea>
+      <textarea id="txtRecado" rows="4" placeholder="Escreva aqui seu recado para os noivos..."></textarea>
       <button class="btn-presente" style="background:white; color:var(--navy); margin-top:15px; padding: 12px;" onclick="enviarRecado()">Enviar Recado</button>
       <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 10px; padding: 12px;" onclick="fecharModalRecado()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE VER RECADOS PARA ADMS / NOIVOS -->
+  <div id="modalVerRecados" class="custom-modal-overlay hidden">
+    <div class="custom-modal-box" style="max-width: 450px;">
+      <h3 style="font-family:'Playfair Display'; margin-top:0;"><i class="fas fa-envelope-open-text"></i> Recados dos Convidados</h3>
+      <div id="listaRecadosAdmin" class="recados-list">
+        <p style="text-align: center; color: #cbd5e1; font-size: 0.8rem;">Carregando recados...</p>
+      </div>
+      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:10px; padding: 12px;" onclick="fecharModalVerRecados()">Fechar</button>
     </div>
   </div>
 
