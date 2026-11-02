@@ -1,15 +1,25 @@
-// URL da API do Google Apps Script
-const URL_API = "https://script.google.com/macros/s/AKfycbyaORFvDT1v-l9hfld8qWR6FuRBJzHasJvUKMSl0b4Dish-gbkvyjuVXtMVPXNDxtlB/exec";
+const URL_API = "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI"; // Mantenha sua URL do Apps Script
 
 let usuarioAtivo = "";
+let tipoPermissao = "convidado";
 let listaGlobal = [];
 let categoriaAtiva = "Todos";
 let itemSelecionado = null;
 
-// Pré-carrega os dados e imagens em background assim que a página abre
 window.addEventListener('DOMContentLoaded', () => {
   preCarregarDados();
 });
+
+function verificarTipoAcesso() {
+  const tipo = document.getElementById('tipoAcesso').value;
+  const grupoSenha = document.getElementById('grupoSenha');
+  if (tipo !== 'convidado') {
+    grupoSenha.classList.remove('hidden');
+  } else {
+    grupoSenha.classList.add('hidden');
+    document.getElementById('senhaAcesso').value = '';
+  }
+}
 
 function preCarregarDados() {
   fetch(`${URL_API}?action=getPresentes`)
@@ -20,51 +30,152 @@ function preCarregarDados() {
     .catch(err => console.error("Erro no pré-carregamento:", err));
 }
 
-// Função de login com transição limpa e 2s de loading
 function entrar() {
   const inputEl = document.getElementById('nomeUser');
   const nomeDigitado = inputEl ? inputEl.value.trim() : "";
+  tipoPermissao = document.getElementById('tipoAcesso').value;
+  const senhaDigitada = document.getElementById('senhaAcesso').value;
+
+  if (tipoPermissao !== 'convidado') {
+    if (senhaDigitada !== '123456') {
+      alert("Senha incorreta para acesso restrito. A senha padrão é 123456.");
+      return;
+    }
+  }
   
-  usuarioAtivo = nomeDigitado !== "" ? nomeDigitado : "Convidado";
+  usuarioAtivo = nomeDigitado !== "" ? nomeDigitado : (tipoPermissao === 'convidado' ? "Convidado" : tipoPermissao.toUpperCase());
 
   const loginEl = document.getElementById('login');
   const loadingEl = document.getElementById('loadingScreen');
   
-  if (loginEl) {
-    loginEl.classList.add('hidden');
-    loginEl.style.display = 'none';
-  }
-  
-  if (loadingEl) {
-    loadingEl.classList.remove('hidden');
-    loadingEl.style.display = 'flex';
-  }
+  if (loginEl) { loginEl.classList.add('hidden'); loginEl.style.display = 'none'; }
+  if (loadingEl) { loadingEl.classList.remove('hidden'); loadingEl.style.display = 'flex'; }
 
-  // Garante 2 segundos mínimos de tela de carregamento visual
   setTimeout(() => {
-    if (loadingEl) {
-      loadingEl.classList.add('hidden');
-      loadingEl.style.display = 'none';
-    }
+    if (loadingEl) { loadingEl.classList.add('hidden'); loadingEl.style.display = 'none'; }
     
     document.getElementById('lista')?.classList.remove('hidden');
     document.getElementById('priceBar')?.classList.remove('hidden');
     document.getElementById('mainFooter')?.classList.remove('hidden');
     document.getElementById('btnRecadoHeader')?.classList.remove('hidden');
 
+    // Se for noiva, noivo ou adm, exibe o botão de Adicionar Item
+    if (tipoPermissao !== 'convidado') {
+      document.getElementById('btnAdicionarHeader')?.classList.remove('hidden');
+    }
+
     aplicarFiltros();
   }, 2000);
 }
 
-function carregar() {
-  preCarregarDados();
+function toggleValorMaximo() {
+  const tipoValor = document.getElementById('formTipoValor').value;
+  const grupoVMax = document.getElementById('grupoValorMax');
+  if (tipoValor === 'Faixa de preço') {
+    grupoVMax.classList.remove('hidden');
+  } else {
+    grupoVMax.classList.add('hidden');
+    document.getElementById('formVMax').value = '';
+  }
+}
+
+function abrirModalAdicionar() {
+  document.getElementById('modalItemTitulo').innerText = "Adicionar Novo Item";
+  document.getElementById('formIndex').value = "";
+  document.getElementById('formId').value = "";
+  document.getElementById('formItem').value = "";
+  document.getElementById('formNome').value = "";
+  document.getElementById('formLink').value = "";
+  document.getElementById('formCategoria').value = "Cozinha";
+  document.getElementById('formImagem').value = "";
+  document.getElementById('formVMin').value = "";
+  document.getElementById('formTipoValor').value = "Preço Fixo";
+  document.getElementById('formVMax').value = "";
+  document.getElementById('formStatus').value = "Disponível";
+  document.getElementById('formCheck').value = "FALSE";
+  document.getElementById('formEscolhidoPor').value = "";
+  document.getElementById('formStatusProduto').value = "Ativo";
+  
+  toggleValorMaximo();
+  document.getElementById('modalItemForm').classList.remove('hidden');
+}
+
+function abrirModalEditar(idx) {
+  const item = listaGlobal.find(i => i.index === idx);
+  if (!item) return;
+
+  document.getElementById('modalItemTitulo').innerText = "Editar Item Completo";
+  document.getElementById('formIndex').value = item.index;
+  document.getElementById('formId').value = item.id || "";
+  document.getElementById('formItem').value = item.itemCodigo || "";
+  document.getElementById('formNome').value = item.nome || "";
+  document.getElementById('formLink').value = item.link || "";
+  document.getElementById('formCategoria').value = item.categoria || "Cozinha";
+  document.getElementById('formImagem').value = item.imagemOriginal || item.imagem || "";
+  document.getElementById('formVMin').value = item.vMinRaw || "";
+  document.getElementById('formTipoValor').value = item.tipoValor || "Preço Fixo";
+  document.getElementById('formVMax').value = item.vMaxRaw || "";
+  document.getElementById('formStatus').value = item.status || "";
+  document.getElementById('formCheck').value = item.check || "";
+  document.getElementById('formEscolhidoPor').value = item.escolhidoPor || "";
+  document.getElementById('formStatusProduto').value = item.statusProduto || "";
+
+  toggleValorMaximo();
+  document.getElementById('modalItemForm').classList.remove('hidden');
+}
+
+function fecharModalItemForm() {
+  document.getElementById('modalItemForm').classList.add('hidden');
+}
+
+function salvarItemForm() {
+  const index = document.getElementById('formIndex').value;
+  const dadosItem = {
+    id: document.getElementById('formId').value,
+    itemCodigo: document.getElementById('formItem').value,
+    nome: document.getElementById('formNome').value,
+    link: document.getElementById('formLink').value,
+    categoria: document.getElementById('formCategoria').value,
+    imagem: document.getElementById('formImagem').value,
+    vMin: document.getElementById('formVMin').value,
+    tipoValor: document.getElementById('formTipoValor').value,
+    vMax: document.getElementById('formVMax').value,
+    status: document.getElementById('formStatus').value,
+    check: document.getElementById('formCheck').value,
+    escolhidoPor: document.getElementById('formEscolhidoPor').value,
+    statusProduto: document.getElementById('formStatusProduto').value
+  };
+
+  const acao = index ? 'atualizar' : 'adicionar';
+
+  fetch(URL_API, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ action: acao, linha: index, dados: dadosItem })
+  }).then(() => {
+    fecharModalItemForm();
+    document.getElementById('successMsg').innerText = "Item salvo com sucesso!";
+    document.getElementById('customSuccess').classList.remove('hidden');
+    preCarregarDados();
+  });
+}
+
+function excluirItem(idx) {
+  if (!confirm("Tem certeza que deseja excluir este item?")) return;
+
+  fetch(URL_API, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ action: 'excluir', linha: idx })
+  }).then(() => {
+    document.getElementById('successMsg').innerText = "Item excluído com sucesso!";
+    document.getElementById('customSuccess').classList.remove('hidden');
+    preCarregarDados();
+  });
 }
 
 function abrirModalRecado() { document.getElementById('modalRecado').classList.remove('hidden'); }
-function fecharModalRecado() { 
-  document.getElementById('modalRecado').classList.add('hidden'); 
-  document.getElementById('txtRecado').value = ""; 
-}
+function fecharModalRecado() { document.getElementById('modalRecado').classList.add('hidden'); document.getElementById('txtRecado').value = ""; }
 
 function enviarRecado() {
   const texto = document.getElementById('txtRecado').value;
@@ -98,7 +209,7 @@ function aplicarFiltros() {
   const range = document.getElementById('rangePrice').value;
   if(range !== "all") {
     filtrados = filtrados.filter(i => {
-      const v = parseFloat(i.vMin.replace(/[R$\s.]/g, '').replace(',', '.'));
+      const v = parseFloat(i.vMinRaw.replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
       if(range === "10-20") return v >= 10 && v <= 20;
       if(range === "20-30") return v > 20 && v <= 30;
       if(range === "30-40") return v > 30 && v <= 40;
@@ -114,8 +225,8 @@ function aplicarFiltros() {
     const sB = b.status === 'Escolhido' ? 1 : 0;
     if (sA !== sB) return sA - sB;
     
-    const pA = parseFloat(a.vMin.replace(/[R$\s.]/g, '').replace(',', '.'));
-    const pB = parseFloat(b.vMin.replace(/[R$\s.]/g, '').replace(',', '.'));
+    const pA = parseFloat(a.vMinRaw.replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
+    const pB = parseFloat(b.vMinRaw.replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
     if(order === "asc") return pA - pB;
     if(order === "desc") return pB - pA;
     return 0;
@@ -128,6 +239,8 @@ function renderizarCards(itens) {
   const grid = document.getElementById('grid');
   grid.innerHTML = itens.length ? "" : "<p style='grid-column:span 2; text-align:center; padding-top: 50px;'>Nenhum item encontrado.</p>";
   
+  const ehAdmin = tipoPermissao !== 'convidado';
+
   itens.forEach(item => {
     const isE = item.status === 'Escolhido';
     grid.innerHTML += `
@@ -142,6 +255,12 @@ function renderizarCards(itens) {
             <div class="price-tag">${item.vMin}</div>
           </div>
           <div>
+            ${ehAdmin ? `
+              <div class="card-actions-admin">
+                <button class="btn-edit-item" onclick="abrirModalEditar(${item.index})"><i class="fas fa-edit"></i> Editar</button>
+                <button class="btn-delete-item" onclick="excluirItem(${item.index})"><i class="fas fa-trash"></i> Excluir</button>
+              </div>
+            ` : ''}
             <a href="${item.link}" target="_blank" class="btn-shopee" ${isE ? 'style="pointer-events: none; opacity: 0.5;"' : ''}>
               <i class="fas fa-shopping-bag"></i> Ver na Shopee
             </a>
