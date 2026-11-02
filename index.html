@@ -15,7 +15,7 @@
       <span class="header-title">Carol & Marlon</span>
     </div>
     <div class="header-actions">
-      <button id="btnAdicionarHeader" class="btn-admin-top hidden" onclick="abrirModalAdicionar()">
+      <button id="btnAdicionarHeader" class="btn-admin-top hidden" onclick="abrirTelaEdicao()">
         <i class="fas fa-plus"></i> Novo Item
       </button>
       <button id="btnRecadoHeader" class="btn-recado-top hidden" onclick="abrirModalRecado()">
@@ -92,26 +92,34 @@
     <div class="nav-item" onclick="filtrar('Limpeza', this)"><i class="fas fa-broom"></i><span>Limpeza</span></div>
   </footer>
 
-  <!-- MODAL DE ADICIONAR / EDITAR ITEM -->
-  <div id="modalItemForm" class="custom-modal-overlay hidden">
-    <div class="custom-modal-box">
-      <h3 id="modalItemTitulo" style="font-family:'Playfair Display'; margin-top:0;">Adicionar Item</h3>
+  <!-- TELA DE EDIÇÃO COMPLETA (SUBSTITUI O MODAL) -->
+  <div id="telaEdicaoCompleta" class="fullscreen-editor hidden">
+    <div class="editor-container">
+      
+      <!-- IMAGEM FIXA NO TOPO DA TELA DE EDIÇÃO -->
+      <div class="editor-header-sticky">
+        <img id="previewImg" src="https://via.placeholder.com/150?text=Sem+Foto" class="editor-preview-img" onerror="this.src='https://via.placeholder.com/150?text=Erro+Foto'">
+        <span style="font-size: 0.65rem; color: #cbd5e1; margin-top: 4px; display: block;">Visualização do Item</span>
+      </div>
+
+      <h3 id="editorTitulo" style="font-family:'Playfair Display'; margin-top:0; text-align: center; margin-bottom: 15px;">Adicionar Item</h3>
       
       <input type="hidden" id="formIndex">
 
       <div class="modal-form-group">
-        <label>ID</label>
-        <input type="text" id="formId" placeholder="Ex: 1">
+        <label>ID (Sequencial Automático)</label>
+        <input type="text" id="formId" disabled placeholder="Gerado automaticamente">
+        <span class="form-help-text">O ID fica bloqueado para edição e segue a ordem sequencial.</span>
       </div>
 
       <div class="modal-form-group">
-        <label>Item</label>
-        <input type="text" id="formItem" placeholder="Ex: Item 01">
+        <label>Nome completo do item</label>
+        <input type="text" id="formItem" placeholder="Ex: Kit 10 Marmita conjunto Potes 750ml...">
       </div>
 
       <div class="modal-form-group">
-        <label>Nome</label>
-        <input type="text" id="formNome" placeholder="Ex: Jogo de Panelas">
+        <label>Nome resumido (que aparecerá para os seus convidados)</label>
+        <input type="text" id="formNome" placeholder="Ex: Kit Marmitas 750ml">
       </div>
 
       <div class="modal-form-group">
@@ -130,41 +138,50 @@
       </div>
 
       <div class="modal-form-group">
-        <label>Imagem</label>
-        <input type="text" id="formImagem" placeholder="URL da imagem ou Drive">
+        <label>Imagem (Subir nesta pasta do Drive com acesso irrestrito)</label>
+        <a href="https://drive.google.com/drive/folders/1BKBm58tpW5MS7SuUd0FtSdxRcSDzEJXi" target="_blank" style="font-size:0.65rem; color:var(--accent); display:block; margin-bottom: 4px; text-decoration: underline;">Abrir pasta do Drive para upload</a>
+        <input type="text" id="formImagem" placeholder="Cole o link de compartilhamento do Drive aqui" oninput="atualizarPreviewAoDigitar(this.value)">
       </div>
 
       <div class="modal-form-group">
-        <label>Valor Mínimo</label>
-        <input type="text" id="formVMin" placeholder="Ex: 50,00">
+        <label>Valor mínimo (Ex: 39,9)</label>
+        <input type="text" id="formVMin" placeholder="39,9" oninput="validarValoresPreco()">
       </div>
 
       <div class="modal-form-group">
-        <label>Tipo de Valor</label>
+        <label>Tipo de valor</label>
         <select id="formTipoValor" onchange="toggleValorMaximo()">
           <option value="Único">Único</option>
           <option value="Faixa de Preço">Faixa de Preço</option>
         </select>
+        <span class="form-help-text">Obs: Valor único é quando o produto consta somente com um preço fixo na Shopee. Faixa de preço é quando o valor pode variar.</span>
       </div>
 
       <div id="grupoValorMax" class="modal-form-group hidden">
-        <label>Valor Máximo</label>
-        <input type="text" id="formVMax" placeholder="Ex: 100,00">
+        <label>Valor máximo (Ex: 59,9)</label>
+        <input type="text" id="formVMax" placeholder="59,9" oninput="validarValoresPreco()">
+        <span id="avisoValorMax" class="form-warning-text hidden">Atenção: O valor máximo está abaixo do valor mínimo!</span>
       </div>
 
       <div class="modal-form-group">
-        <label>Status</label>
-        <input type="text" id="formStatus" placeholder="Disponível / Escolhido">
+        <label>Status (Deixe em branco se disponível, ou "Escolhido")</label>
+        <select id="formStatus">
+          <option value="">Disponível (Em branco na planilha)</option>
+          <option value="Escolhido">Escolhido</option>
+        </select>
       </div>
 
       <div class="modal-form-group">
-        <label>Check</label>
-        <input type="text" id="formCheck" placeholder="TRUE / FALSE">
+        <label>Check (Caixa de seleção true / false)</label>
+        <select id="formCheck">
+          <option value="false">false</option>
+          <option value="true">true</option>
+        </select>
       </div>
 
       <div class="modal-form-group">
         <label>Escolhido por:</label>
-        <input type="text" id="formEscolhidoPor" placeholder="Nome do convidado">
+        <input type="text" id="formEscolhidoPor" placeholder="Nome do convidado que escolheu">
       </div>
 
       <div class="modal-form-group">
@@ -177,8 +194,8 @@
         </select>
       </div>
 
-      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:10px; padding: 12px;" onclick="salvarItemForm()">Salvar Item</button>
-      <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 8px; padding: 10px;" onclick="fecharModalItemForm()">Cancelar</button>
+      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:15px; padding: 14px; font-weight: 600;" onclick="salvarItemCompleto()">Salvar Alterações</button>
+      <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 10px; padding: 12px;" onclick="fecharTelaEdicao()">Cancelar</button>
     </div>
   </div>
 
