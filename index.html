@@ -218,15 +218,20 @@
     </div>
   </div>
 
-  <!-- MODAL DE RECADOS PARA CONVIDADOS (ENVIAR) -->
-  <div id="modalRecado" class="custom-modal-overlay hidden">
-    <div class="custom-modal-box">
-      <h3 style="font-family:'Playfair Display'">Deixar um Recado</h3>
-      <textarea id="txtRecado" rows="4" placeholder="Escreva aqui seu recado para os noivos..."></textarea>
-      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:15px; padding: 12px;" onclick="enviarRecado()">Enviar Recado</button>
-      <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 10px; padding: 12px;" onclick="fecharModalRecado()">Cancelar</button>
+<!-- MODAL RECADO (CONVIDADO) -->
+<div id="modalRecado" class="custom-modal-overlay hidden">
+  <div class="custom-modal-box">
+    <h3 style="font-family: 'Playfair Display', serif; margin-top: 0; color: #FFFFFF;">Deixe seu recado aos noivos</h3>
+    <div class="modal-form-group">
+      <label for="txtRecado"><i class="fas fa-heart"></i> Mensagem:</label>
+      <textarea id="txtRecado" rows="5" placeholder="Escreva aqui seu carinho e mensagem para o casal..." class="textarea-recado"></textarea>
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+      <button class="btn-presente" style="background: rgba(255,255,255,0.15); width: 50%;" onclick="fecharModalRecado()">Cancelar</button>
+      <button class="btn-presente" style="width: 50%;" onclick="enviarRecado()">Enviar Recado</button>
     </div>
   </div>
+</div>
 
   <!-- MODAL DE VER RECADOS PARA ADMS / NOIVOS -->
   <div id="modalVerRecados" class="custom-modal-overlay hidden">
