@@ -6,7 +6,7 @@ let listaGlobal = [];
 let categoriaAtiva = "Todos";
 let itemSelecionado = null;
 
-// Dispara o carregamento dos dados em segundo plano assim que a página abre
+// Pré-carrega os dados e imagens em background assim que a página abre
 window.addEventListener('DOMContentLoaded', () => {
   preCarregarDados();
 });
@@ -20,23 +20,32 @@ function preCarregarDados() {
     .catch(err => console.error("Erro no pré-carregamento:", err));
 }
 
+// Função de login com transição limpa e 2s de loading
 function entrar() {
-  // Pega o valor digitado ou define "Convidado" como padrão se estiver vazio
   const inputEl = document.getElementById('nomeUser');
   const nomeDigitado = inputEl ? inputEl.value.trim() : "";
   
   usuarioAtivo = nomeDigitado !== "" ? nomeDigitado : "Convidado";
 
-  // Transiciona as telas imediatamente
   const loginEl = document.getElementById('login');
   const loadingEl = document.getElementById('loadingScreen');
   
-  if (loginEl) loginEl.classList.add('hidden');
-  if (loadingEl) loadingEl.classList.remove('hidden');
+  if (loginEl) {
+    loginEl.classList.add('hidden');
+    loginEl.style.display = 'none';
+  }
+  
+  if (loadingEl) {
+    loadingEl.classList.remove('hidden');
+    loadingEl.style.display = 'flex';
+  }
 
-  // Garante os 2 segundos de carregamento visual
+  // Garante 2 segundos mínimos de tela de carregamento visual
   setTimeout(() => {
-    if (loadingEl) loadingEl.classList.add('hidden');
+    if (loadingEl) {
+      loadingEl.classList.add('hidden');
+      loadingEl.style.display = 'none';
+    }
     
     document.getElementById('lista')?.classList.remove('hidden');
     document.getElementById('priceBar')?.classList.remove('hidden');
@@ -47,19 +56,16 @@ function entrar() {
   }, 2000);
 }
 
-// Caso queira forçar uma atualização manual se precisar
 function carregar() {
   preCarregarDados();
 }
 
-// Abre e fecha o modal de recados
 function abrirModalRecado() { document.getElementById('modalRecado').classList.remove('hidden'); }
 function fecharModalRecado() { 
   document.getElementById('modalRecado').classList.add('hidden'); 
   document.getElementById('txtRecado').value = ""; 
 }
 
-// Envia o recado para a planilha via POST
 function enviarRecado() {
   const texto = document.getElementById('txtRecado').value;
   if(!texto) return;
@@ -75,7 +81,6 @@ function enviarRecado() {
   });
 }
 
-// Lógica de filtros de categoria
 function filtrar(categoria, elemento) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   elemento.classList.add('active');
@@ -83,7 +88,6 @@ function filtrar(categoria, elemento) {
   aplicarFiltros();
 }
 
-// Aplica filtros de preço e ordem
 function aplicarFiltros() {
   let filtrados = [...listaGlobal];
   
@@ -120,7 +124,6 @@ function aplicarFiltros() {
   renderizarCards(filtrados);
 }
 
-// Gera o HTML dos cards de presentes
 function renderizarCards(itens) {
   const grid = document.getElementById('grid');
   grid.innerHTML = itens.length ? "" : "<p style='grid-column:span 2; text-align:center; padding-top: 50px;'>Nenhum item encontrado.</p>";
@@ -151,7 +154,6 @@ function renderizarCards(itens) {
   });
 }
 
-// Funções de confirmação de escolha
 function abrirConfirmacao(idx, nome) {
   itemSelecionado = { idx, nome };
   document.getElementById('confirmText').innerHTML = `Você deseja confirmar que dará o presente:<br><b>${nome}</b>?`;
@@ -171,7 +173,7 @@ function confirmarAcao() {
     fecharModal();
     document.getElementById('successMsg').innerText = "Sua escolha foi registrada com sucesso.";
     document.getElementById('customSuccess').classList.remove('hidden');
-    preCarregarDados(); // Atualiza os dados em background
+    preCarregarDados();
   });
 }
 
