@@ -1,4 +1,9 @@
-function doGet() {
+function doGet(e) {
+  const action = e && e.parameter ? e.parameter.action : null;
+  if (action === 'getPresentes') {
+    return ContentService.createTextOutput(JSON.stringify(getPresentesData()))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
     .setTitle('Casamento Carol & Marlon')
@@ -6,34 +11,99 @@ function doGet() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheets()[0];
+    
+    if (data.action === 'escolher') {
+      const linha = data.linha;
+      const nomeUsuario = data.nome;
+      sheet.getRange(linha, 10).setValue('Escolhido'); // Coluna J (Status)
+      sheet.getRange(linha, 11).setValue(true);        // Coluna K (Check)
+      sheet.getRange(linha, 12).setValue(nomeUsuario); // Coluna L (Escolhido por)
+      return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (data.action === 'recado') {
+      let sheetRecados = ss.getSheetByName("Página2");
+      if (!sheetRecados) {
+        sheetRecados = ss.insertSheet("Página2");
+        sheetRecados.appendRow(["Data e Horário", "Recado", "Nome"]);
+      }
+      sheetRecados.appendRow([new Date(), data.texto, data.nome]);
+      return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (data.action === 'adicionar') {
+      const d = data.dados;
+      sheet.appendRow([
+        d.id, d.itemCodigo, d.nome, d.link, d.categoria, 
+        d.imagem, d.vMin, d.vMax, d.tipoValor, d.status || 'Disponível', 
+        d.check || false, d.escolhidoPor || '', d.statusProduto || 'Ativo'
+      ]);
+      return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (data.action === 'atualizar') {
+      const linha = parseInt(data.linha);
+      const d = data.dados;
+      sheet.getRange(linha, 1, 1, 13).setValues([[
+        d.id, d.itemCodigo, d.nome, d.link, d.categoria, 
+        d.imagem, d.vMin, d.vMax, d.tipoValor, d.status, 
+        d.check, d.escolhidoPor, d.statusProduto
+      ]]);
+      return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (data.action === 'excluir') {
+      const linha = parseInt(data.linha);
+      sheet.deleteRow(linha);
+      return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
 function formatarMoeda(valor) {
-  if (isNaN(valor) || valor === "") return "R$ 0,00";
-  return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  if (isNaN(valor) || valor === "" || valor === null) return "R$ 0,00";
+  return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function getPresentesData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheets()[0]; 
+  const dados = sheet.getDataRange().getValues();
+  dados.shift(); // Remove cabeçalho
+  
+  return dados.map((linha, index) => {
+    return {
+      id: linha[0],
+      itemCodigo: linha[1],
+      nome: linha[2], 
+      link: linha[3], 
+      categoria: linha[4], 
+      imagemOriginal: linha[5],
+      imagem: converterLinkDrive(linha[5]), 
+      vMinRaw: linha[6],
+      vMin: formatarMoeda(linha[6]),
+      vMaxRaw: linha[7],
+      vMax: formatarMoeda(linha[7]),
+      tipoValor: linha[8], 
+      status: linha[9], 
+      check: linha[10],
+      escolhidoPor: linha[11],
+      statusProduto: linha[12],
+      index: index + 2
+    };
+  }).filter(p => p.nome !== "");
 }
 
 function getPresentes() {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheets()[0]; 
-    const dados = sheet.getDataRange().getValues();
-    dados.shift(); 
-    
-    return dados.map((linha, index) => {
-      return {
-        nome: linha[2], 
-        link: linha[3], 
-        categoria: linha[4], 
-        imagem: converterLinkDrive(linha[5]), 
-        vMin: formatarMoeda(linha[6]),
-        vMax: formatarMoeda(linha[7]),
-        tipoValor: linha[8], 
-        status: linha[9], // O status 'Escolhido' agora é lido e enviado para o HTML
-        index: index + 2
-      };
-    }).filter(p => p.nome !== ""); // Filtra apenas se a linha estiver vazia
-  } catch(e) {
-    return "Erro: " + e.toString();
-  }
+  return getPresentesData();
 }
 
 function converterLinkDrive(link) {
@@ -41,31 +111,4 @@ function converterLinkDrive(link) {
   const idMatch = link.match(/[-\w]{25,}/);
   if (idMatch) return "https://lh3.googleusercontent.com/d/" + idMatch[0];
   return link;
-}
-
-function escolherPresente(linha, nomeUsuario) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheets()[0];
-  sheet.getRange(linha, 10).setValue('Escolhido');
-  sheet.getRange(linha, 11).setValue('TRUE');       
-  sheet.getRange(linha, 12).setValue(nomeUsuario); 
-  return true;
-}
-function salvarRecado(recado, nomeUsuario) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheetRecados = ss.getSheetByName("Página2");
-    
-    // Se a aba não existir, ele cria automaticamente
-    if (!sheetRecados) {
-      sheetRecados = ss.insertSheet("Página2");
-      sheetRecados.appendRow(["Data e Horário", "Recado", "Nome"]);
-    }
-    
-    const dataHora = new Date();
-    sheetRecados.appendRow([dataHora, recado, nomeUsuario]);
-    return true;
-  } catch(e) {
-    throw new Error("Erro ao salvar recado: " + e.message);
-  }
 }
