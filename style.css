@@ -204,3 +204,26 @@ body {
 .recado-body { font-size: 0.8rem; color: #E2E8F0; line-height: 1.4; }
 
 .hidden { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+
+.textarea-recado {
+  width: 100%;
+  min-height: 110px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.85rem;
+  color: var(--navy);
+  outline: none;
+  box-sizing: border-box;
+  resize: vertical;
+  line-height: 1.4;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: var(--transition);
+}
+
+.textarea-recado:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+}
