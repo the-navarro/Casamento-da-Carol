@@ -122,21 +122,30 @@ function processarUploadArquivo(input) {
       })
       .then(res => res.json())
       .then(resposta => {
-        if (resposta.status === "success") {
-          document.getElementById('previewImg').src = resposta.url.replace("view?usp=drive_link", "preview");
+        if (resposta.status === "success" && resposta.url) {
+          // Extrai o ID do Drive para montar o link de visualização otimizada
+          const idMatch = resposta.url.match(/[-\w]{25,}/);
+          const linkVisualizacao = idMatch ? "https://lh3.googleusercontent.com/d/" + idMatch[0] : resposta.url;
+          
+          // Atualiza a pré-visualização e o input oculto com o link limpo do Drive
+          document.getElementById('previewImg').src = linkVisualizacao;
           document.getElementById('formImagemUrl').value = resposta.url;
+          
           carregarDadosServidor();
+        } else {
+          alert("Erro ao enviar imagem: " + (resposta.message || "Desconhecido"));
+          document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Erro";
         }
       })
       .catch(err => {
-        console.error("Erro no upload:", err);
-        alert("Erro ao enviar a imagem para o Drive.");
+        console.error("Erro na requisição de upload:", err);
+        alert("Erro de conexão ao enviar a imagem.");
+        document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Erro";
       });
     };
     reader.readAsDataURL(file);
   }
 }
-
 function alternarCampoEdicao(checkbox) {
   const blocoId = checkbox.value;
   const blocoEl = document.getElementById(blocoId);
