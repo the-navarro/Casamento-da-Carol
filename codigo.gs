@@ -1,131 +1,294 @@
-// Permite que o GitHub acesse os dados (API)
-function doGet(e) {
-  const acao = e && e.parameter ? e.parameter.action : null;
-  
-  if (acao === "getPresentes") {
-    const dados = getPresentes();
-    return ContentService.createTextOutput(JSON.stringify(dados))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+/**
+ * Casamento Carol & Marlon — backend (Google Apps Script)
+ *
+ * IMPORTANTE: a linha "@OnlyCurrentDoc" foi REMOVIDA de propósito.
+ * Ela limitava o script a acessar só a planilha e bloqueava o DriveApp,
+ * que era a causa do upload de imagens falhar.
+ */
 
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('Casamento Carol & Marlon')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+const ID_PASTA_DRIVE = "1BKBm58tpW5MS7SuUd0FtSdxRcSDzEJXi";
+
+// Rode esta função UMA vez no editor (▶ Executar). Ela cria e apaga um arquivo de teste na pasta,
+// o que força o Google a pedir a permissão de ESCRITA no Drive (a de leitura sozinha não basta).
+function autorizarAplicacao() {
+  const pasta = DriveApp.getFolderById(ID_PASTA_DRIVE);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const teste = pasta.createFile("teste-autorizacao.txt", "ok");
+  teste.setTrashed(true);
+  Logger.log("Tudo certo! Pasta: " + pasta.getName() + " | Planilha: " + ss.getName());
 }
 
-// Recebe as ações de presentes, recados e gestão do GitHub
+/* ===================== ENTRADAS ===================== */
+
+function doGet(e) {
+  const acao = e && e.parameter ? e.parameter.action : null;
+  if (acao === "getPresentes") return responderJSON(getPresentes());
+  if (acao === "getRecados") return responderJSON(getRecados());
+
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Casamento Carol & Marlon')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, viewport-fit=cover')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
 function doPost(e) {
   try {
     const params = JSON.parse(e.postData.contents);
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheets()[0];
 
-    // 1. Escolher presente (Convidado)
-    if (params.action === "escolher") {
-      escolherPresente(params.linha, params.nome);
-      return ContentService.createTextOutput(JSON.stringify({"status": "success"}))
-        .setMimeType(ContentService.MimeType.JSON);
+    // Upload fora do lock (pode demorar) — não mexe na planilha.
+    if (params.action === "uploadImagem") {
+      const res = salvarImagemNoDrive(params.arquivoBase64, params.nomeArquivo);
+      if (res.erro) return responderJSON({ status: "error", message: res.erro });
+      return responderJSON({ status: "success", url: res.url });
     }
 
-    // 2. Salvar recado (Convidado)
-    if (params.action === "recado") {
-      salvarRecado(params.texto, params.nome);
-      return ContentService.createTextOutput(JSON.stringify({"status": "success"}))
-        .setMimeType(ContentService.MimeType.JSON);
+    // Demais ações escrevem na planilha: usa lock para evitar duas escolhas simultâneas.
+    const lock = LockService.getScriptLock();
+    lock.waitLock(20000);
+    try {
+      return responderJSON(tratarAcao(params));
+    } finally {
+      lock.releaseLock();
     }
-
-    // 3. Adicionar novo item (Noiva/Noivo/Adm)
-    if (params.action === "adicionar") {
-      const d = params.dados;
-      sheet.appendRow([
-        d.id, d.itemCodigo, d.nome, d.link, d.categoria, 
-        d.imagem, d.vMin, d.vMax, d.tipoValor, d.status || 'Disponível', 
-        d.check || 'FALSE', d.escolhidoPor || '', d.statusProduto || 'Ativo'
-      ]);
-      return ContentService.createTextOutput(JSON.stringify({"status": "success"}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // 4. Atualizar/Editar item existente (Noiva/Noivo/Adm)
-    if (params.action === "atualizar") {
-      const linha = parseInt(params.linha);
-      const d = params.dados;
-      sheet.getRange(linha, 1, 1, 13).setValues([[
-        d.id, d.itemCodigo, d.nome, d.link, d.categoria, 
-        d.imagem, d.vMin, d.vMax, d.tipoValor, d.status, 
-        d.check, d.escolhidoPor, d.statusProduto
-      ]]);
-      return ContentService.createTextOutput(JSON.stringify({"status": "success"}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // 5. Excluir item (Noiva/Noivo/Adm)
-    if (params.action === "excluir") {
-      const linha = parseInt(params.linha);
-      sheet.deleteRow(linha);
-      return ContentService.createTextOutput(JSON.stringify({"status": "success"}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
+    return responderJSON({ status: "error", message: err.toString() });
   }
 }
 
-// --- FUNÇÕES DE SUPORTE ---
+function tratarAcao(params) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheets()[0];
 
-function formatarMoeda(valor) {
-  if (valor === "" || valor === null || isNaN(valor)) return "R$ 0,00";
-  return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  if (params.action === "escolher") {
+    return escolherPresente(sheet, parseInt(params.linha), params.nome);
+  }
+
+  if (params.action === "desfazer") {
+    return desfazerEscolha(sheet, parseInt(params.linha), params.nome);
+  }
+
+  if (params.action === "recado") {
+    salvarRecado(params.texto, params.nome);
+    return { status: "success" };
+  }
+
+  if (params.action === "adicionar") {
+    const d = params.dados || {};
+    const proximoId = obterProximoId(sheet);
+    const checkAutomatico = !!(d.escolhidoPor && String(d.escolhidoPor).trim() !== "");
+    sheet.appendRow([
+      proximoId,
+      limpar(d.itemCodigo),
+      limpar(d.nome),
+      limpar(d.link),
+      d.categoria || '',
+      d.imagem || '',
+      parseValor(d.vMin),
+      parseValor(d.vMax),
+      d.tipoValor || '',
+      d.status || '',
+      checkAutomatico,
+      limpar(d.escolhidoPor),
+      d.statusProduto || 'Ativo'
+    ]);
+    return { status: "success" };
+  }
+
+  if (params.action === "atualizar") {
+    const linha = parseInt(params.linha);
+    const d = params.dados || {};
+    if (!linha || linha < 2) return { status: "error", message: "Linha inválida" };
+    const atual = sheet.getRange(linha, 1, 1, 13).getValues()[0];
+    const checkAutomatico = !!(d.escolhidoPor && String(d.escolhidoPor).trim() !== "");
+
+    sheet.getRange(linha, 1, 1, 13).setValues([[
+      atual[0],
+      limpar(d.itemCodigo),
+      limpar(d.nome),
+      limpar(d.link),
+      d.categoria || '',
+      d.imagem || atual[5] || '',
+      parseValor(d.vMin),
+      parseValor(d.vMax),
+      d.tipoValor || '',
+      d.status || '',
+      checkAutomatico,
+      limpar(d.escolhidoPor),
+      d.statusProduto || 'Ativo'
+    ]]);
+    return { status: "success" };
+  }
+
+  if (params.action === "excluir") {
+    const linha = parseInt(params.linha);
+    if (!linha || linha < 2) return { status: "error", message: "Linha inválida" };
+    sheet.deleteRow(linha);
+    return { status: "success" };
+  }
+
+  return { status: "error", message: "Ação inválida" };
 }
 
-function getPresentes() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheets()[0]; 
-  const dados = sheet.getDataRange().getValues();
-  dados.shift(); // Remove o cabeçalho
-  
-  return dados.map((linha, index) => ({
-    id: linha[0],             // ID (Coluna A)
-    itemCodigo: linha[1],     // Item (Coluna B)
-    nome: linha[2],           // Nome (Coluna C)
-    link: linha[3],           // Link (Coluna D)
-    categoria: linha[4],      // Categoria (Coluna E)
-    imagemOriginal: linha[5], // Imagem crua (Coluna F)
-    imagem: converterLinkDrive(linha[5]), 
-    vMinRaw: linha[6],        // Valor Mínimo sem formatação (Coluna G)
-    vMin: formatarMoeda(linha[6]),
-    vMaxRaw: linha[7],        // Valor Máximo sem formatação (Coluna H)
-    vMax: formatarMoeda(linha[7]),
-    tipoValor: linha[8],      // Tipo de Valor (Coluna I)
-    status: linha[9],         // Status (Coluna J)
-    check: linha[10],         // Check (Coluna K)
-    escolhidoPor: linha[11],  // Escolhido por: (Coluna L)
-    statusProduto: linha[12], // Status do Produto (Coluna M)
-    index: index + 2
-  })).filter(p => p.nome !== "");
+/* ===================== DRIVE ===================== */
+
+function salvarImagemNoDrive(base64Data, nomeArquivo) {
+  // Retorna { url } em caso de sucesso ou { erro } com o motivo real da falha.
+  try {
+    if (!base64Data || base64Data.indexOf(",") === -1) return { erro: "Imagem vazia ou em formato inválido." };
+    const pasta = DriveApp.getFolderById(ID_PASTA_DRIVE);
+    const partes = base64Data.split(",");
+    const contentType = partes[0].match(/:(.*?);/)[1];
+    const decoded = Utilities.base64Decode(partes[1]);
+    const nome = (nomeArquivo || "presente.jpg").replace(/[^\w.\-]+/g, "_");
+    const blob = Utilities.newBlob(decoded, contentType, nome);
+
+    const arquivo = pasta.createFile(blob);
+    try {
+      arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (errShare) {
+      Logger.log("Não foi possível tornar o arquivo público: " + errShare);
+    }
+    return { url: "https://drive.google.com/file/d/" + arquivo.getId() + "/view?usp=drive_link" };
+  } catch (e) {
+    Logger.log("Erro ao salvar no Drive: " + e.toString());
+    return { erro: e.toString() };
+  }
+}
+
+// Rode no editor (▶) para testar o Drive sem depender do site. Veja o resultado em "Execuções"/Registro.
+function testarUpload() {
+  const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+  const r = salvarImagemNoDrive(png, "teste.png");
+  Logger.log(JSON.stringify(r));
 }
 
 function converterLinkDrive(link) {
   if (!link || typeof link !== 'string') return "";
-  const idMatch = link.match(/[-\w]{25,}/);
-  return idMatch ? "https://lh3.googleusercontent.com/d/" + idMatch[0] : link;
+  if (link.indexOf("data:image") === 0) return "";
+  if (link.indexOf("drive.google.com") > -1 || link.indexOf("googleusercontent.com") > -1) {
+    const idMatch = link.match(/[-\w]{25,}/);
+    if (idMatch) return "https://drive.google.com/thumbnail?id=" + idMatch[0] + "&sz=w800";
+  }
+  return link;
 }
 
-function escolherPresente(linha, nomeUsuario) {
+/* ===================== UTILITÁRIOS ===================== */
+
+function responderJSON(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Evita que um texto digitado vire fórmula na planilha (=, +, -, @).
+function limpar(t) {
+  if (t === null || t === undefined) return '';
+  let s = String(t).trim().slice(0, 1000);
+  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  return s;
+}
+
+// Aceita 39.9 | "39,90" | "R$ 1.299,90" e devolve número.
+function parseValor(v) {
+  if (v === '' || v === null || v === undefined) return '';
+  if (typeof v === 'number') return v;
+  let s = String(v).replace(/[^\d,.\-]/g, '');
+  if (!s) return '';
+  if (s.indexOf(',') > -1) s = s.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? '' : n;
+}
+
+function obterProximoId(sheet) {
+  const ultimaLinha = sheet.getLastRow();
+  if (ultimaLinha <= 1) return 1;
+  const ids = sheet.getRange(2, 1, ultimaLinha - 1, 1).getValues();
+  let maxId = 0;
+  for (let i = 0; i < ids.length; i++) {
+    const val = parseInt(ids[i][0]);
+    if (!isNaN(val) && val > maxId) maxId = val;
+  }
+  return maxId + 1;
+}
+
+function formatarMoeda(valor) {
+  const n = Number(valor);
+  if (valor === "" || valor === null || isNaN(n)) return "R$ 0,00";
+  return "R$ " + n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/* ===================== LEITURA ===================== */
+
+function getPresentes() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheets()[0];
-  sheet.getRange(linha, 10).setValue('Escolhido'); // Coluna J
-  sheet.getRange(linha, 11).setValue('TRUE');       // Coluna K
-  sheet.getRange(linha, 12).setValue(nomeUsuario);  // Coluna L
+  const dados = sheet.getDataRange().getValues();
+  dados.shift();
+
+  return dados.map((linha, index) => ({
+    id: linha[0],
+    itemCodigo: linha[1],
+    nome: linha[2],
+    link: linha[3],
+    categoria: linha[4],
+    imagemOriginal: linha[5],
+    imagem: converterLinkDrive(linha[5]),
+    vMinRaw: linha[6],
+    vMin: formatarMoeda(linha[6]),
+    vMaxRaw: linha[7],
+    vMax: formatarMoeda(linha[7]),
+    tipoValor: linha[8],
+    status: linha[9],
+    check: linha[10],
+    escolhidoPor: linha[11],
+    statusProduto: linha[12],
+    index: index + 2
+  })).filter(p => p.nome !== "");
+}
+
+function getRecados() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetRecados = ss.getSheetByName("Página2");
+  if (!sheetRecados) return [];
+  const dados = sheetRecados.getDataRange().getValues();
+  dados.shift();
+  const tz = Session.getScriptTimeZone();
+  return dados.map(linha => ({
+    data: linha[0] ? Utilities.formatDate(new Date(linha[0]), tz, 'dd/MM/yyyy HH:mm') : '',
+    recado: linha[1] || '',
+    nome: linha[2] || 'Anônimo'
+  })).reverse();
+}
+
+/* ===================== ESCRITA ===================== */
+
+function escolherPresente(sheet, linha, nomeUsuario) {
+  if (!linha || linha < 2) return { status: "error", message: "Item inválido" };
+  const atual = sheet.getRange(linha, 10, 1, 2).getValues()[0]; // status, check
+  if (atual[0] === 'Escolhido' || atual[1] === true) {
+    return { status: "error", code: "ja_escolhido", message: "Alguém acabou de escolher este presente." };
+  }
+  sheet.getRange(linha, 10).setValue('Escolhido');
+  sheet.getRange(linha, 11).setValue(true);
+  sheet.getRange(linha, 12).setValue(limpar(nomeUsuario));
+  return { status: "success" };
+}
+
+function desfazerEscolha(sheet, linha, nomeUsuario) {
+  if (!linha || linha < 2) return { status: "error", message: "Item inválido" };
+  const dono = String(sheet.getRange(linha, 12).getValue() || "").trim().toLowerCase();
+  const quem = String(nomeUsuario || "").trim().toLowerCase();
+  if (!dono || dono !== quem) {
+    return { status: "error", message: "Somente quem escolheu pode desfazer." };
+  }
+  sheet.getRange(linha, 10).setValue('');
+  sheet.getRange(linha, 11).setValue(false);
+  sheet.getRange(linha, 12).setValue('');
+  return { status: "success" };
 }
 
 function salvarRecado(recado, nomeUsuario) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheetRecados = ss.getSheetByName("Página2") || ss.insertSheet("Página2");
+  const sheetRecados = ss.getSheetByName("Página2") || ss.insertSheet("Página2");
   if (sheetRecados.getLastRow() === 0) sheetRecados.appendRow(["Data", "Recado", "Nome"]);
-  sheetRecados.appendRow([new Date(), recado, nomeUsuario]);
+  sheetRecados.appendRow([new Date(), limpar(recado), limpar(nomeUsuario)]);
 }
