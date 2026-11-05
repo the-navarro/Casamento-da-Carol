@@ -1,15 +1,11 @@
 /**
  * Casamento Carol & Marlon — backend (Google Apps Script)
- *
- * IMPORTANTE: a linha "@OnlyCurrentDoc" foi REMOVIDA de propósito.
- * Ela limitava o script a acessar só a planilha e bloqueava o DriveApp,
- * que era a causa do upload de imagens falhar.
+ * Versão otimizada para integração com GitHub Pages
  */
 
 const ID_PASTA_DRIVE = "1BKBm58tpW5MS7SuUd0FtSdxRcSDzEJXi";
 
-// Rode esta função UMA vez no editor (▶ Executar). Ela cria e apaga um arquivo de teste na pasta,
-// o que força o Google a pedir a permissão de ESCRITA no Drive (a de leitura sozinha não basta).
+// Rode esta função UMA vez no editor (▶ Executar) para autorizar o acesso ao Drive.
 function autorizarAplicacao() {
   const pasta = DriveApp.getFolderById(ID_PASTA_DRIVE);
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -18,31 +14,29 @@ function autorizarAplicacao() {
   Logger.log("Tudo certo! Pasta: " + pasta.getName() + " | Planilha: " + ss.getName());
 }
 
-/* ===================== ENTRADAS ===================== */
+/* ===================== ENTRADAS (API) ===================== */
 
 function doGet(e) {
   const acao = e && e.parameter ? e.parameter.action : null;
   if (acao === "getPresentes") return responderJSON(getPresentes());
   if (acao === "getRecados") return responderJSON(getRecados());
 
-  return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('Casamento Carol & Marlon')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, viewport-fit=cover')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  // Mensagem padrão caso acessem o link da Web App diretamente no navegador
+  return responderJSON({ status: "online", mensagem: "API do Casamento Carol & Marlon funcionando!" });
 }
 
 function doPost(e) {
   try {
     const params = JSON.parse(e.postData.contents);
 
-    // Upload fora do lock (pode demorar) — não mexe na planilha.
+    // Upload de imagem fora do lock
     if (params.action === "uploadImagem") {
       const res = salvarImagemNoDrive(params.arquivoBase64, params.nomeArquivo);
       if (res.erro) return responderJSON({ status: "error", message: res.erro });
       return responderJSON({ status: "success", url: res.url });
     }
 
-    // Demais ações escrevem na planilha: usa lock para evitar duas escolhas simultâneas.
+    // Demais ações na planilha usam lock de segurança
     const lock = LockService.getScriptLock();
     lock.waitLock(20000);
     try {
@@ -132,7 +126,6 @@ function tratarAcao(params) {
 /* ===================== DRIVE ===================== */
 
 function salvarImagemNoDrive(base64Data, nomeArquivo) {
-  // Retorna { url } em caso de sucesso ou { erro } com o motivo real da falha.
   try {
     if (!base64Data || base64Data.indexOf(",") === -1) return { erro: "Imagem vazia ou em formato inválido." };
     const pasta = DriveApp.getFolderById(ID_PASTA_DRIVE);
@@ -155,13 +148,6 @@ function salvarImagemNoDrive(base64Data, nomeArquivo) {
   }
 }
 
-// Rode no editor (▶) para testar o Drive sem depender do site. Veja o resultado em "Execuções"/Registro.
-function testarUpload() {
-  const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
-  const r = salvarImagemNoDrive(png, "teste.png");
-  Logger.log(JSON.stringify(r));
-}
-
 function converterLinkDrive(link) {
   if (!link || typeof link !== 'string') return "";
   if (link.indexOf("data:image") === 0) return "";
@@ -176,10 +162,10 @@ function converterLinkDrive(link) {
 
 function responderJSON(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader("Access-Control-Allow-Origin", "*"); // Libera requisições vindas do GitHub Pages
 }
 
-// Evita que um texto digitado vire fórmula na planilha (=, +, -, @).
 function limpar(t) {
   if (t === null || t === undefined) return '';
   let s = String(t).trim().slice(0, 1000);
@@ -187,7 +173,6 @@ function limpar(t) {
   return s;
 }
 
-// Aceita 39.9 | "39,90" | "R$ 1.299,90" e devolve número.
 function parseValor(v) {
   if (v === '' || v === null || v === undefined) return '';
   if (typeof v === 'number') return v;
@@ -263,7 +248,7 @@ function getRecados() {
 
 function escolherPresente(sheet, linha, nomeUsuario) {
   if (!linha || linha < 2) return { status: "error", message: "Item inválido" };
-  const atual = sheet.getRange(linha, 10, 1, 2).getValues()[0]; // status, check
+  const atual = sheet.getRange(linha, 10, 1, 2).getValues()[0];
   if (atual[0] === 'Escolhido' || atual[1] === true) {
     return { status: "error", code: "ja_escolhido", message: "Alguém acabou de escolher este presente." };
   }
