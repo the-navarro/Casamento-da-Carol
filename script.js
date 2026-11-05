@@ -1,468 +1,436 @@
 const URL_API = "https://script.google.com/macros/s/AKfycbyaORFvDT1v-l9hfld8qWR6FuRBJzHasJvUKMSl0b4Dish-gbkvyjuVXtMVPXNDxtlB/exec";
+    const SENHA_ADM = "123456";
+    const PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent(
+      "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><rect width='300' height='300' fill='#ECE8E1'/>" +
+      "<g fill='none' stroke='#B9B1A4' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'>" +
+      "<rect x='95' y='125' width='110' height='85' rx='6'/><path d='M150 125v85M95 160h110M150 125c-25-30-55-15-35 0M150 125c25-30 55-15 35 0'/></g></svg>");
 
-let usuarioAtivo = "";
-let tipoPermissao = "convidado";
-let listaGlobal = [];
-let categoriaAtiva = "Todos";
-let itemSelecionado = null;
+    let usuarioAtivo = "";
+    let tipoPermissao = "convidado";
+    let listaGlobal = [];
+    let categoriaAtiva = "Todos";
+    let acaoPendente = null;
+    let enviando = false;
 
-window.addEventListener('DOMContentLoaded', () => {
-  carregarDadosServidor();
-});
-
-function carregarDadosServidor(callback) {
-  fetch(`${URL_API}?action=getPresentes`)
-    .then(res => res.json())
-    .then(itens => {
-      if (Array.isArray(itens)) {
-        listaGlobal = itens;
-        if (callback) callback();
-      } else {
-        listaGlobal = [];
-        if (callback) callback();
-      }
-    })
-    .catch(err => {
-      console.error("Erro ao carregar dados:", err);
-      listaGlobal = [];
-      if (callback) callback();
-    });
-}
-
-function verificarTipoAcesso() {
-  const tipo = document.getElementById('tipoAcesso').value;
-  const grupoSenha = document.getElementById('grupoSenha');
-  if (tipo !== 'convidado') {
-    grupoSenha.classList.remove('hidden');
-  } else {
-    grupoSenha.classList.add('hidden');
-    document.getElementById('senhaAcesso').value = '';
-  }
-}
-
-function tentarEntrar() {
-  const inputEl = document.getElementById('nomeUser');
-  const nomeDigitado = inputEl ? inputEl.value.trim() : "";
-  tipoPermissao = document.getElementById('tipoAcesso').value;
-  const senhaDigitada = document.getElementById('senhaAcesso').value;
-
-  if (tipoPermissao !== 'convidado') {
-    if (senhaDigitada !== '123456') {
-      alert("Senha incorreta para acesso restrito. A senha é 123456.");
-      return;
+    /* ---------- utilidades ---------- */
+    const $ = id => document.getElementById(id);
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
-  }
-  
-  usuarioAtivo = nomeDigitado !== "" ? nomeDigitado : (tipoPermissao === 'convidado' ? "Convidado" : tipoPermissao.toUpperCase());
+    function paraNumero(v) {
+      if (typeof v === "number") return v;
+      let s = String(v == null ? "" : v).replace(/[^\d,.\-]/g, "");
+      if (!s) return 0;
+      if (s.indexOf(",") > -1) s = s.replace(/\./g, "").replace(",", ".");
+      return parseFloat(s) || 0;
+    }
+    function ehAdmin() { return tipoPermissao !== "convidado"; }
+    function estaEscolhido(i) { return i.status === "Escolhido" || i.check === true; }
+    function toast(msg, tipo = "ok") {
+      const el = document.createElement("div");
+      el.className = "toast " + tipo;
+      el.innerHTML = `<i class="fas ${tipo === "ok" ? "fa-check-circle" : "fa-exclamation-circle"}"></i><span>${esc(msg)}</span>`;
+      $("toasts").appendChild(el);
+      setTimeout(() => { el.style.transition = "opacity .4s"; el.style.opacity = "0"; setTimeout(() => el.remove(), 400); }, 3200);
+    }
+    function mostrar(id) { $(id).classList.remove("hidden"); }
+    function esconder(id) { $(id).classList.add("hidden"); }
 
-  const loginEl = document.getElementById('login');
-  const loadingEl = document.getElementById('loadingScreen');
-  
-  if (loginEl) { loginEl.classList.add('hidden'); loginEl.style.display = 'none'; }
-  if (loadingEl) { loadingEl.classList.remove('hidden'); loadingEl.style.display = 'flex'; }
+    async function api(corpo) {
+      const res = await fetch(URL_API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(corpo) });
+      return res.json();
+    }
 
-  carregarDadosServidor(() => {
-    setTimeout(() => {
-      if (loadingEl) { loadingEl.classList.add('hidden'); loadingEl.style.display = 'none'; }
-      
-      document.getElementById('lista')?.classList.remove('hidden');
-      document.getElementById('priceBar')?.classList.remove('hidden');
-      document.getElementById('mainFooter')?.classList.remove('hidden');
-      document.getElementById('btnRecadoHeader')?.classList.remove('hidden');
+    /* ---------- dados ---------- */
+    function carregarDadosServidor(callback) {
+      return fetch(`${URL_API}?action=getPresentes`)
+        .then(r => r.json())
+        .then(itens => { listaGlobal = Array.isArray(itens) ? itens : []; })
+        .catch(err => { console.error("Erro ao carregar dados:", err); listaGlobal = []; toast("Não foi possível carregar os presentes.", "err"); })
+        .then(() => { if (callback) callback(); });
+    }
 
-      const iconeRecado = document.getElementById('iconeBotaoRecado');
-      const textoRecado = document.getElementById('textoBotaoRecado');
-
-      if (tipoPermissao !== 'convidado') {
-        document.getElementById('btnAdicionarHeader')?.classList.remove('hidden');
-        document.getElementById('filtroStatusProduto')?.classList.remove('hidden');
-        
-        iconeRecado.className = "fas fa-envelope-open-text";
-        textoRecado.innerText = "Ver Recados";
-      } else {
-        iconeRecado.className = "fas fa-envelope";
-        textoRecado.innerText = "Recado";
-      }
-
-      aplicarFiltros();
-    }, 1500);
-  });
-}
-
-function ampliarFoto() {
-  const src = document.getElementById('previewImg').src;
-  document.getElementById('imgZoomAmpliada').src = src;
-  document.getElementById('modalZoomFoto').classList.remove('hidden');
-}
-
-function fecharZoomFoto() {
-  document.getElementById('modalZoomFoto').classList.add('hidden');
-}
-
-function processarUploadArquivo(input) {
-  if (input.files && input.files[0]) {
-    const file = input.files[0];
-    const reader = new FileReader();
-    const linhaAtual = document.getElementById('formIndex').value;
-    
-    document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Enviando...";
-
-    reader.onload = function(e) {
-      const base64Data = e.target.result;
-      
-      fetch(URL_API, {
-        method: 'POST',
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ 
-          action: 'uploadImagem', 
-          arquivoBase64: base64Data, 
-          nomeArquivo: file.name,
-          linha: linhaAtual 
-        })
-      })
-      .then(res => res.json())
-      .then(resposta => {
-        if (resposta.status === "success" && resposta.url) {
-          // Extrai o ID do Drive para montar o link de visualização otimizada
-          const idMatch = resposta.url.match(/[-\w]{25,}/);
-          const linkVisualizacao = idMatch ? "https://lh3.googleusercontent.com/d/" + idMatch[0] : resposta.url;
-          
-          // Atualiza a pré-visualização e o input oculto com o link limpo do Drive
-          document.getElementById('previewImg').src = linkVisualizacao;
-          document.getElementById('formImagemUrl').value = resposta.url;
-          
-          carregarDadosServidor();
-        } else {
-          alert("Erro ao enviar imagem: " + (resposta.message || "Desconhecido"));
-          document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Erro";
-        }
-      })
-      .catch(err => {
-        console.error("Erro na requisição de upload:", err);
-        alert("Erro de conexão ao enviar a imagem.");
-        document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Erro";
-      });
+    /* ---------- fechar modais (X, fundo, Esc) ---------- */
+    const FECHADORES = {
+      telaEdicaoCompleta: () => esconder("telaEdicaoCompleta"),
+      modalRecado: () => esconder("modalRecado"),
+      modalVerRecados: () => esconder("modalVerRecados"),
+      customConfirm: () => fecharModal(),
+      customSuccess: () => esconder("customSuccess"),
+      modalZoomFoto: () => esconder("modalZoomFoto")
     };
-    reader.readAsDataURL(file);
-  }
-}
-function alternarCampoEdicao(checkbox) {
-  const blocoId = checkbox.value;
-  const blocoEl = document.getElementById(blocoId);
-  if (checkbox.checked) {
-    blocoEl.classList.remove('hidden');
-  } else {
-    blocoEl.classList.add('hidden');
-  }
-}
+    function fecharOverlay(el) {
+      const o = el.closest(".overlay");
+      if (o && FECHADORES[o.id]) FECHADORES[o.id]();
+    }
 
-function toggleValorMaximo() {
-  const tipoValor = document.getElementById('formTipoValor').value;
-  const grupoVMax = document.getElementById('grupoValorMax');
-  if (tipoValor === 'Faixa de Preço') {
-    grupoVMax.classList.remove('hidden');
-  } else {
-    grupoVMax.classList.add('hidden');
-    document.getElementById('formVMax').value = '';
-    document.getElementById('avisoValorMax').classList.add('hidden');
-  }
-}
+    /* ---------- login ---------- */
+    window.addEventListener("DOMContentLoaded", () => {
+      carregarDadosServidor();
+      const salvo = (() => { try { return localStorage.getItem("cm_nome"); } catch (e) { return ""; } })();
+      if (salvo) $("nomeUser").value = salvo;
+      $("nomeUser").addEventListener("keydown", e => { if (e.key === "Enter") tentarEntrar(); });
+      $("senhaAcesso").addEventListener("keydown", e => { if (e.key === "Enter") tentarEntrar(); });
+      document.querySelectorAll(".nav-item[data-cat]").forEach(b => b.addEventListener("click", () => filtrar(b.dataset.cat)));
+      $("grid").addEventListener("click", aoClicarNoGrid);
 
-function validarValoresPreco() {
-  const vMin = parseFloat(document.getElementById('formVMin').value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
-  const vMax = parseFloat(document.getElementById('formVMax').value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
-  const aviso = document.getElementById('avisoValorMax');
+      const atualizarMini = () => {
+        const limite = Math.max(60, $("topbar").offsetHeight - 70);
+        $("miniBar").classList.toggle("show", window.scrollY > limite);
+      };
+      window.addEventListener("scroll", atualizarMini, { passive: true });
 
-  if (vMax > 0 && vMax < vMin) {
-    aviso.classList.remove('hidden');
-  } else {
-    aviso.classList.add('hidden');
-  }
-}
-
-function abrirTelaEdicao(idx = null) {
-  const checkboxes = document.querySelectorAll('.selector-box input[type="checkbox"]');
-  const seletorBox = document.getElementById('seletorEdicaoContainer');
-  
-  if (idx === null) {
-    document.getElementById('editorTitulo').innerText = "Adicionar Novo Item";
-    seletorBox.classList.add('hidden');
-    document.getElementById('formIndex').value = "";
-    document.getElementById('formItem').value = "";
-    document.getElementById('formNome').value = "";
-    document.getElementById('formLink').value = "";
-    document.getElementById('formCategoria').value = "Cozinha";
-    document.getElementById('previewImg').src = "https://via.placeholder.com/150?text=Sem+Foto";
-    document.getElementById('formImagemUrl').value = "";
-    document.getElementById('formVMin').value = "";
-    document.getElementById('formTipoValor').value = "Único";
-    document.getElementById('formVMax').value = "";
-    document.getElementById('formStatus').value = "";
-    document.getElementById('formEscolhidoPor').value = "";
-    document.getElementById('formStatusProduto').value = "Ativo";
-
-    document.querySelectorAll('.campo-editavel').forEach(el => el.classList.remove('hidden'));
-  } else {
-    document.getElementById('editorTitulo').innerText = "Editar Item";
-    seletorBox.classList.remove('hidden');
-    
-    const item = listaGlobal.find(i => i.index === idx);
-    if (!item) return;
-
-    document.getElementById('formIndex').value = item.index;
-    document.getElementById('formItem').value = item.itemCodigo || "";
-    document.getElementById('formNome').value = item.nome || "";
-    document.getElementById('formLink').value = item.link || "";
-    document.getElementById('formCategoria').value = item.categoria || "Cozinha";
-    document.getElementById('previewImg').src = item.imagem || "https://via.placeholder.com/150?text=Sem+Foto";
-    document.getElementById('formImagemUrl').value = item.imagemOriginal || "";
-    document.getElementById('formVMin').value = item.vMinRaw || "";
-    document.getElementById('formTipoValor').value = item.tipoValor || "Único";
-    document.getElementById('formVMax').value = item.vMaxRaw || "";
-    document.getElementById('formStatus').value = item.status || "";
-    document.getElementById('formEscolhidoPor').value = item.escolhidoPor || "";
-    document.getElementById('formStatusProduto').value = item.statusProduto || "Ativo";
-
-    checkboxes.forEach(ch => {
-      ch.checked = false;
-      alternarCampoEdicao(ch);
+      document.querySelectorAll(".overlay").forEach(o => {
+        let comecouNoFundo = false;
+        o.addEventListener("pointerdown", e => { comecouNoFundo = (e.target === o); });
+        o.addEventListener("click", e => { if (e.target === o && comecouNoFundo && FECHADORES[o.id]) FECHADORES[o.id](); });
+      });
+      document.addEventListener("keydown", e => {
+        if (e.key !== "Escape") return;
+        const abertos = [...document.querySelectorAll(".overlay:not(.hidden)")];
+        const o = abertos[abertos.length - 1];
+        if (o && FECHADORES[o.id]) FECHADORES[o.id]();
+      });
     });
-  }
 
-  toggleValorMaximo();
-  document.getElementById('telaEdicaoCompleta').classList.remove('hidden');
-}
+    let modoAdmin = false;
+    function alternarAreaAdmin() {
+      modoAdmin = !modoAdmin;
+      $("grupoSenha").classList.toggle("hidden", !modoAdmin);
+      if (!modoAdmin) $("senhaAcesso").value = "";
+      $("btnToggleAdmin").textContent = modoAdmin ? "Voltar ao acesso de convidado" : "Sou os noivos / administração";
+      $("btnEntrar").textContent = modoAdmin ? "Entrar como administração" : "Ver presentes";
+      if (modoAdmin) $("senhaAcesso").focus();
+    }
 
-function fecharTelaEdicao() {
-  document.getElementById('telaEdicaoCompleta').classList.add('hidden');
-}
+    function tentarEntrar() {
+      const nome = $("nomeUser").value.trim();
+      tipoPermissao = modoAdmin ? "adm" : "convidado";
+      if (modoAdmin && $("senhaAcesso").value !== SENHA_ADM) {
+        toast("Senha incorreta.", "err");
+        return;
+      }
+      if (!nome) { toast("Conta pra gente o seu nome 💛", "err"); $("nomeUser").focus(); return; }
+      usuarioAtivo = nome;
+      try { localStorage.setItem("cm_nome", nome); } catch (e) {}
 
-function salvarItemCompleto() {
-  const index = document.getElementById('formIndex').value;
-  const dadosItem = {
-    itemCodigo: document.getElementById('formItem').value,
-    nome: document.getElementById('formNome').value,
-    link: document.getElementById('formLink').value,
-    categoria: document.getElementById('formCategoria').value,
-    imagem: document.getElementById('formImagemUrl').value,
-    vMin: document.getElementById('formVMin').value,
-    tipoValor: document.getElementById('formTipoValor').value,
-    vMax: document.getElementById('formVMax').value,
-    status: document.getElementById('formStatus').value,
-    escolhidoPor: document.getElementById('formEscolhidoPor').value,
-    statusProduto: document.getElementById('formStatusProduto').value
-  };
+      esconder("login"); mostrar("loadingScreen");
+      carregarDadosServidor(() => {
+        setTimeout(() => {
+          esconder("loadingScreen");
+          ["topbar", "miniBar", "lista", "mainFooter"].forEach(mostrar);
+          $("saudacao").textContent = "Olá, " + usuarioAtivo.split(" ")[0];
+          if (ehAdmin()) {
+            mostrar("btnAdicionarHeader"); $("filtroStatusProduto").classList.remove("hidden");
+            $("iconeBotaoRecado").className = "fas fa-envelope-open-text"; $("textoBotaoRecado").textContent = "Recados";
+          }
+          aplicarFiltros();
+        }, 900);
+      });
+    }
 
-  const acao = index ? 'atualizar' : 'adicionar';
+    /* ---------- filtros ---------- */
+    function filtrar(cat) {
+      categoriaAtiva = cat;
+      document.querySelectorAll(".nav-item").forEach(el => el.classList.toggle("active", el.dataset.cat === cat));
+      aplicarFiltros();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
-  fetch(URL_API, {
-    method: 'POST',
-    body: JSON.stringify({ action: acao, linha: index, dados: dadosItem })
-  }).then(() => {
-    fecharTelaEdicao();
-    document.getElementById('successMsg').innerText = "Item salvo com sucesso!";
-    document.getElementById('customSuccess').classList.remove('hidden');
-    carregarDadosServidor(aplicarFiltros);
-  });
-}
+    function aplicarFiltros() {
+      let f = [...listaGlobal];
 
-function excluirItem(idx) {
-  if (!confirm("Tem certeza que deseja excluir este item?")) return;
-
-  fetch(URL_API, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'excluir', linha: idx })
-  }).then(() => {
-    document.getElementById('successMsg').innerText = "Item excluído com sucesso!";
-    document.getElementById('customSuccess').classList.remove('hidden');
-    carregarDadosServidor(aplicarFiltros);
-  });
-}
-
-function clicarBotaoRecados() {
-  if (tipoPermissao === 'convidado') {
-    abrirModalRecado();
-  } else {
-    abrirModalVerRecados();
-  }
-}
-
-function abrirModalRecado() { document.getElementById('modalRecado').classList.remove('hidden'); }
-function fecharModalRecado() { document.getElementById('modalRecado').classList.add('hidden'); document.getElementById('txtRecado').value = ""; }
-
-function enviarRecado() {
-  const texto = document.getElementById('txtRecado').value;
-  if(!texto) return;
-  
-  fetch(URL_API, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'recado', texto: texto, nome: usuarioAtivo })
-  }).then(() => {
-    fecharModalRecado();
-    document.getElementById('successMsg').innerText = "Seu recado foi enviado com sucesso!";
-    document.getElementById('customSuccess').classList.remove('hidden');
-  });
-}
-
-function abrirModalVerRecados() {
-  const modal = document.getElementById('modalVerRecados');
-  const container = document.getElementById('listaRecadosAdmin');
-  container.innerHTML = '<p style="text-align: center; color: #cbd5e1; font-size: 0.8rem;">Carregando recados...</p>';
-  modal.classList.remove('hidden');
-
-  fetch(`${URL_API}?action=getRecados`)
-    .then(res => res.json())
-    .then(recados => {
-      if (Array.isArray(recados) && recados.length > 0) {
-        container.innerHTML = "";
-        recados.forEach(r => {
-          container.innerHTML += `
-            <div class="recado-card">
-              <div class="recado-header">
-                <span><i class="fas fa-user"></i> ${r.nome}</span>
-                <span>${r.data}</span>
-              </div>
-              <div class="recado-body">"${r.recado}"</div>
-            </div>`;
+      if (!ehAdmin()) {
+        f = f.filter(i => {
+          const st = (i.statusProduto || "").trim().toLowerCase();
+          return !["inválido", "invalido", "retirado", "esgotado"].includes(st);
         });
       } else {
-        container.innerHTML = '<p style="text-align: center; color: #cbd5e1; font-size: 0.8rem;">Nenhum recado encontrado ainda.</p>';
+        const sp = $("filtroStatusProduto").value;
+        if (sp !== "all") f = f.filter(i => (i.statusProduto || "Ativo") === sp);
       }
-    })
-    .catch(() => {
-      container.innerHTML = '<p style="text-align: center; color: #fca5a5; font-size: 0.8rem;">Erro ao carregar recados.</p>';
-    });
-}
 
-function fecharModalVerRecados() {
-  document.getElementById('modalVerRecados').classList.add('hidden');
-}
+      if (categoriaAtiva !== "Todos") f = f.filter(i => i.categoria === categoriaAtiva);
 
-function filtrar(categoria, elemento) {
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  elemento.classList.add('active');
-  categoriaAtiva = categoria;
-  aplicarFiltros();
-}
+      const q = $("busca").value.trim().toLowerCase();
+      if (q) f = f.filter(i => (i.nome || "").toLowerCase().includes(q) || (i.itemCodigo || "").toLowerCase().includes(q));
 
-function aplicarFiltros() {
-  let filtrados = [...listaGlobal];
-  
-  if (tipoPermissao === 'convidado') {
-    filtrados = filtrados.filter(i => {
-      const st = (i.statusProduto || "").trim().toLowerCase();
-      return st !== 'inválido' && st !== 'invalido' && st !== 'retirado' && st !== 'esgotado';
-    });
-  } else {
-    const statusProdFiltro = document.getElementById('filtroStatusProduto')?.value;
-    if (statusProdFiltro && statusProdFiltro !== 'all') {
-      filtrados = filtrados.filter(i => (i.statusProduto || "Ativo") === statusProdFiltro);
+      const disp = $("filtroDisp").value;
+      if (disp === "livres") f = f.filter(i => !estaEscolhido(i));
+      if (disp === "escolhidos") f = f.filter(estaEscolhido);
+
+      const range = $("rangePrice").value;
+      if (range !== "all") {
+        const [min, max] = range.split("-").map(Number);
+        f = f.filter(i => { const v = paraNumero(i.vMinRaw); return v >= min && v <= max; });
+      }
+
+      const ordem = $("sortOrder").value;
+      f.sort((a, b) => {
+        const sA = estaEscolhido(a) ? 1 : 0, sB = estaEscolhido(b) ? 1 : 0;
+        if (sA !== sB) return sA - sB;
+        const pA = paraNumero(a.vMinRaw), pB = paraNumero(b.vMinRaw);
+        if (ordem === "asc") return pA - pB;
+        if (ordem === "desc") return pB - pA;
+        return 0;
+      });
+
+      $("contador").textContent = f.length === 1 ? "1 presente" : f.length + " presentes";
+      renderizarCards(f);
     }
-  }
 
-  if(categoriaAtiva !== "Todos") {
-    filtrados = filtrados.filter(i => i.categoria === categoriaAtiva);
-  }
-  
-  const range = document.getElementById('rangePrice').value;
-  if(range !== "all") {
-    filtrados = filtrados.filter(i => {
-      const v = parseFloat(String(i.vMinRaw).replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
-      if(range === "10-20") return v >= 10 && v <= 20;
-      if(range === "20-30") return v > 20 && v <= 30;
-      if(range === "30-40") return v > 30 && v <= 40;
-      if(range === "40-50") return v > 40 && v <= 50;
-      if(range === "50-100") return v > 50 && v <= 100;
-      return true;
-    });
-  }
-  
-  const order = document.getElementById('sortOrder').value;
-  filtrados.sort((a, b) => {
-    const sA = (a.status === 'Escolhido' || a.check === true) ? 1 : 0;
-    const sB = (b.status === 'Escolhido' || b.check === true) ? 1 : 0;
-    if (sA !== sB) return sA - sB;
-    
-    const pA = parseFloat(String(a.vMinRaw).replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
-    const pB = parseFloat(String(b.vMinRaw).replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
-    if(order === "asc") return pA - pB;
-    if(order === "desc") return pB - pA;
-    return 0;
-  });
-  
-  renderizarCards(filtrados);
-}
+    function urlImagemPublica(item) {
+      const orig = String(item.imagemOriginal || "");
+      if (/drive\.google\.com|googleusercontent\.com/.test(orig)) {
+        const m = orig.match(/[-\w]{25,}/);
+        if (m) return "https://lh3.googleusercontent.com/d/" + m[0] + "=s1200";
+      }
+      return item.imagem || "";
+    }
 
-function renderizarCards(itens) {
-  const grid = document.getElementById('grid');
-  grid.innerHTML = itens.length ? "" : "<p style='grid-column:span 2; text-align:center; padding-top: 50px; color: #64748b;'>Nenhum item encontrado.</p>";
-  
-  const ehAdmin = tipoPermissao !== 'convidado';
+    /* ---------- cards ---------- */
+    function renderizarCards(itens) {
+      const grid = $("grid");
+      if (!itens.length) {
+        grid.innerHTML = `<div class="empty"><i class="fas fa-gift"></i>Nenhum presente encontrado.</div>`;
+        return;
+      }
+      const admin = ehAdmin();
+      const meuNome = usuarioAtivo.trim().toLowerCase();
 
-  itens.forEach(item => {
-    const isE = item.status === 'Escolhido' || item.check === true;
-    const isEsgotadoAdm = item.statusProduto === 'Esgotado';
-    const foraDeLinha = item.statusProduto === 'Inválido' || item.statusProduto === 'Retirado';
+      grid.innerHTML = itens.map((item, n) => {
+        const tomado = estaEscolhido(item);
+        const meu = tomado && !admin && String(item.escolhidoPor || "").trim().toLowerCase() === meuNome;
+        const foraDeLinha = ["Inválido", "Retirado", "Esgotado"].includes(item.statusProduto);
+        const faixa = item.tipoValor === "Faixa de Preço" && paraNumero(item.vMaxRaw) > 0;
+        const img = item.imagem || PLACEHOLDER;
+        const safeLink = /^https?:\/\//i.test(item.link || "") ? item.link : "";
+        const urlPub = admin ? urlImagemPublica(item) : "";
+        const ferramentas = urlPub ? `<div class="img-tools">
+              <a href="${esc(urlPub)}" target="_blank" rel="noopener" title="Abrir imagem" aria-label="Abrir imagem"><i class="fas fa-download"></i></a>
+            </div>` : "";
 
-    grid.innerHTML += `
-      <div class="card ${isE ? 'esgotado' : ''}">
-        ${isE ? '<div class="esgotado-badge">Escolhido</div>' : ''}
-        ${ehAdmin && isEsgotadoAdm ? '<div class="status-badge-admin">Esgotado</div>' : ''}
-        ${ehAdmin && foraDeLinha ? `<div class="status-badge-admin">${item.statusProduto}</div>` : ''}
-        <div class="card-img-wrapper">
-          <img src="${item.imagem}" class="card-img" onerror="this.src='https://via.placeholder.com/300?text=Imagem'">
-          ${ehAdmin ? `
-            <div class="img-actions-bar">
-              <a href="${item.imagem}" download="presente.jpg" target="_blank" class="btn-img-action" title="Baixar Imagem">
-                <i class="fas fa-download"></i>
-              </a>
+        return `
+        <article class="card ${tomado ? "taken" : ""}" style="animation-delay:${Math.min(n, 10) * 40}ms">
+          <div class="img-wrap" data-zoom="${esc(img)}">
+            <img src="${esc(img)}" alt="${esc(item.nome)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${PLACEHOLDER}'">
+            ${ferramentas}
+            ${meu ? `<span class="badge mine"><i class="fas fa-heart"></i> Sua escolha</span>` : tomado ? `<span class="badge taken"><i class="fas fa-check"></i> Escolhido</span>` : ""}
+            ${admin && foraDeLinha ? `<span class="badge admin">${esc(item.statusProduto)}</span>` : ""}
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">${esc(item.nome)}</h3>
+            <div class="price">${faixa ? `<small>a partir de</small>` : ""}${esc(item.vMin)}${faixa ? `<small>até ${esc(item.vMax)}</small>` : ""}</div>
+            ${admin && tomado ? `<div class="admin-info"><i class="fas fa-user"></i> <b>${esc(item.escolhidoPor || "—")}</b></div>` : ""}
+            <div class="card-actions">
+              ${admin ? `<div class="btn-row">
+                  <button class="btn btn-soft" data-act="editar" data-idx="${item.index}"><i class="fas fa-pen"></i> Editar</button>
+                  <button class="btn btn-danger" data-act="excluir" data-idx="${item.index}"><i class="fas fa-trash"></i></button>
+                </div>` : ""}
+              ${safeLink ? `<a href="${esc(safeLink)}" target="_blank" rel="noopener" class="btn btn-ghost ${tomado ? "disabled-link" : ""}"><i class="fas fa-shopping-bag"></i> Ver produto</a>` : ""}
+              ${meu
+                ? `<button class="btn btn-light" style="background:#FBE9E8;color:var(--danger);border:0" data-act="desfazer" data-idx="${item.index}" data-nome="${esc(item.nome)}"><i class="fas fa-undo"></i> Desfazer</button>`
+                : `<button class="btn btn-solid" ${tomado ? "disabled" : ""} data-act="escolher" data-idx="${item.index}" data-nome="${esc(item.nome)}">${tomado ? "Indisponível" : `<i class="fas fa-gift"></i> Vou presentear`}</button>`}
             </div>
-          ` : ''}
-        </div>
-        <div class="card-content">
-          <div>
-            <div class="card-title">${item.nome}</div>
-            <div class="price-tag">${item.vMin}</div>
           </div>
-          <div>
-            ${ehAdmin ? `
-              <div class="card-actions-admin">
-                <button class="btn-edit-item" onclick="abrirTelaEdicao(${item.index})"><i class="fas fa-edit"></i> Editar</button>
-                <button class="btn-delete-item" onclick="excluirItem(${item.index})"><i class="fas fa-trash"></i> Excluir</button>
-              </div>
-            ` : ''}
-            <a href="${item.link}" target="_blank" class="btn-shopee" ${isE ? 'style="pointer-events: none; opacity: 0.5;"' : ''}>
-              <i class="fas fa-shopping-cart"></i> Comprar
-            </a>
-            <button class="btn-presente" ${isE ? 'disabled' : ''} onclick="abrirConfirmacao(${item.index}, '${item.nome.replace(/'/g, "\\'")}')">
-              ${isE ? 'Indisponível' : 'Escolher'}
-            </button>
-          </div>
-        </div>
-      </div>`;
-  });
-}
+        </article>`;
+      }).join("");
+    }
 
-function abrirConfirmacao(idx, nome) {
-  itemSelecionado = { idx, nome };
-  document.getElementById('confirmText').innerHTML = `Você deseja confirmar que dará o presente:<br><b>${nome}</b>?`;
-  document.getElementById('customConfirm').classList.remove('hidden');
-}
+    function aoClicarNoGrid(e) {
+      if (e.target.closest(".img-tools")) return;
+      const zoom = e.target.closest("[data-zoom]");
+      const btn = e.target.closest("[data-act]");
+      if (btn) {
+        const idx = parseInt(btn.dataset.idx);
+        if (btn.dataset.act === "editar") return abrirTelaEdicao(idx);
+        if (btn.dataset.act === "excluir") return excluirItem(idx);
+        if (btn.dataset.act === "escolher") return abrirConfirmacao("escolher", idx, btn.dataset.nome);
+        if (btn.dataset.act === "desfazer") return abrirConfirmacao("desfazer", idx, btn.dataset.nome);
+      } else if (zoom) {
+        $("imgZoomAmpliada").src = zoom.dataset.zoom; mostrar("modalZoomFoto");
+      }
+    }
 
-function fecharModal() { document.getElementById('customConfirm').classList.add('hidden'); }
+    function abrirConfirmacao(tipo, idx, nome) {
+      acaoPendente = { tipo, idx, nome };
+      const cfg = {
+        escolher: ["Confirmar escolha?", `Você deseja confirmar que dará o presente:<br><b>${esc(nome)}</b>?`, "Sim, vou presentear"],
+        desfazer: ["Desfazer escolha?", `O presente <b>${esc(nome)}</b> voltará a ficar disponível para outros convidados.`, "Sim, desfazer"],
+        excluir: ["Excluir item?", `Tem certeza que deseja excluir <b>${esc(nome)}</b>? Essa ação não pode ser desfeita.`, "Sim, excluir"]
+      }[tipo];
+      $("confirmTitulo").textContent = cfg[0]; $("confirmText").innerHTML = cfg[1]; $("btnConfirmar").textContent = cfg[2];
+      mostrar("customConfirm");
+    }
+    function fecharModal() { esconder("customConfirm"); acaoPendente = null; }
 
-function confirmarAcao() {
-  if(!itemSelecionado) return;
-  
-  fetch(URL_API, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'escolher', linha: itemSelecionado.idx, nome: usuarioAtivo })
-  }).then(() => {
-    fecharModal();
-    document.getElementById('successMsg').innerText = "Sua escolha foi registrada com sucesso.";
-    document.getElementById('customSuccess').classList.remove('hidden');
-    carregarDadosServidor(aplicarFiltros);
-  });
-}
+    async function confirmarAcao() {
+      if (!acaoPendente || enviando) return;
+      const { tipo, idx } = acaoPendente;
+      enviando = true; $("btnConfirmar").textContent = "Aguarde…";
+      try {
+        let r;
+        if (tipo === "escolher") r = await api({ action: "escolher", linha: idx, nome: usuarioAtivo });
+        if (tipo === "desfazer") r = await api({ action: "desfazer", linha: idx, nome: usuarioAtivo });
+        if (tipo === "excluir") r = await api({ action: "excluir", linha: idx });
+        fecharModal();
+        if (r && r.status === "success") {
+          if (tipo === "escolher") { $("successMsg").textContent = "Sua escolha foi registrada com sucesso. Os noivos agradecem! 💛"; mostrar("customSuccess"); }
+          else toast(tipo === "desfazer" ? "Escolha desfeita." : "Item excluído.");
+        } else toast((r && r.message) || "Não foi possível concluir.", "err");
+      } catch (err) { fecharModal(); toast("Erro de conexão. Tente novamente.", "err"); }
+      enviando = false;
+      carregarDadosServidor(aplicarFiltros);
+    }
+    function excluirItem(idx) {
+      const item = listaGlobal.find(i => i.index === idx);
+      abrirConfirmacao("excluir", idx, item ? item.nome : "este item");
+    }
+    function fecharSucesso() { esconder("customSuccess"); }
 
-function fecharSucesso() { document.getElementById('customSuccess').classList.add('hidden'); }
+    function ampliarFoto() { $("imgZoomAmpliada").src = $("previewImg").src; mostrar("modalZoomFoto"); }
+    function fecharZoomFoto() { esconder("modalZoomFoto"); }
+
+    function alternarCampoEdicao(cb) { $(cb.value).classList.toggle("hidden", !cb.checked); }
+    function toggleValorMaximo() {
+      const faixa = $("formTipoValor").value === "Faixa de Preço";
+      $("grupoValorMax").classList.toggle("hidden", !faixa);
+      if (!faixa) { $("formVMax").value = ""; esconder("avisoValorMax"); }
+    }
+    function validarValoresPreco() {
+      const vMin = paraNumero($("formVMin").value), vMax = paraNumero($("formVMax").value);
+      $("avisoValorMax").classList.toggle("hidden", !(vMax > 0 && vMax < vMin));
+    }
+
+    function abrirTelaEdicao(idx = null) {
+      const novo = idx === null;
+      $("uploadStatus").textContent = ""; $("uploadStatus").className = "upload-status";
+      $("seletorEdicaoContainer").classList.toggle("hidden", novo);
+
+      if (novo) {
+        $("editorTitulo").textContent = "Novo item"; $("editorSub").textContent = "Preencha os dados do presente.";
+        ["formIndex", "formItem", "formNome", "formLink", "formImagemUrl", "formVMin", "formVMax", "formEscolhidoPor"].forEach(id => $(id).value = "");
+        $("formCategoria").value = categoriaAtiva !== "Todos" ? categoriaAtiva : "Cozinha";
+        $("previewImg").src = PLACEHOLDER;
+        $("formTipoValor").value = "Único"; $("formStatus").value = ""; $("formStatusProduto").value = "Ativo";
+        document.querySelectorAll(".campo-editavel").forEach(el => el.classList.remove("hidden"));
+      } else {
+        const item = listaGlobal.find(i => i.index === idx);
+        if (!item) return;
+        $("editorTitulo").textContent = "Editar item"; $("editorSub").textContent = "Marque acima o que deseja alterar.";
+        $("formIndex").value = item.index;
+        $("formItem").value = item.itemCodigo || ""; $("formNome").value = item.nome || ""; $("formLink").value = item.link || "";
+        $("formCategoria").value = item.categoria || "Cozinha";
+        $("previewImg").src = item.imagem || PLACEHOLDER;
+        $("formImagemUrl").value = item.imagemOriginal || "";
+        $("formVMin").value = item.vMinRaw !== "" && item.vMinRaw != null ? String(item.vMinRaw).replace(".", ",") : "";
+        $("formTipoValor").value = item.tipoValor || "Único";
+        $("formVMax").value = item.vMaxRaw !== "" && item.vMaxRaw != null ? String(item.vMaxRaw).replace(".", ",") : "";
+        $("formStatus").value = item.status || ""; $("formEscolhidoPor").value = item.escolhidoPor || "";
+        $("formStatusProduto").value = item.statusProduto || "Ativo";
+        document.querySelectorAll(".selector-box input, #seletorEdicaoContainer input").forEach(ch => { ch.checked = false; alternarCampoEdicao(ch); });
+      }
+      toggleValorMaximo();
+      mostrar("telaEdicaoCompleta");
+    }
+    function fecharTelaEdicao() { esconder("telaEdicaoCompleta"); }
+
+    async function salvarItemCompleto() {
+      if (enviando) return;
+      if (!$("formNome").value.trim()) { toast("Informe o nome resumido do item.", "err"); return; }
+      const index = $("formIndex").value;
+      const dados = {
+        itemCodigo: $("formItem").value, nome: $("formNome").value, link: $("formLink").value,
+        categoria: $("formCategoria").value, imagem: $("formImagemUrl").value,
+        vMin: $("formVMin").value, tipoValor: $("formTipoValor").value, vMax: $("formVMax").value,
+        status: $("formStatus").value, escolhidoPor: $("formEscolhidoPor").value, statusProduto: $("formStatusProduto").value
+      };
+      enviando = true; $("btnSalvarItem").textContent = "Salvando…";
+      try {
+        const r = await api({ action: index ? "atualizar" : "adicionar", linha: index, dados });
+        if (r.status === "success") { fecharTelaEdicao(); toast("Item salvo com sucesso!"); }
+        else toast(r.message || "Erro ao salvar.", "err");
+      } catch (e) { toast("Erro de conexão ao salvar.", "err"); }
+      enviando = false; $("btnSalvarItem").textContent = "Salvar alterações";
+      carregarDadosServidor(aplicarFiltros);
+    }
+
+    function comprimirImagem(file, maxLado = 1000, qualidade = 0.82) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          let { width: w, height: h } = img;
+          const escala = Math.min(1, maxLado / Math.max(w, h));
+          w = Math.round(w * escala); h = Math.round(h * escala);
+          const canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL("image/jpeg", qualidade));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Não foi possível ler a imagem.")); };
+        img.src = url;
+      });
+    }
+
+    async function processarUploadArquivo(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const status = $("uploadStatus");
+      const anterior = $("previewImg").src;
+      status.className = "upload-status"; status.textContent = "Otimizando e enviando imagem…";
+      $("btnUpload").disabled = true;
+      try {
+        const base64 = await comprimirImagem(file);
+        $("previewImg").src = base64;
+        const nome = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+        const r = await api({ action: "uploadImagem", arquivoBase64: base64, nomeArquivo: nome });
+        if (r.status === "success" && r.url) {
+          $("formImagemUrl").value = r.url;
+          status.className = "upload-status ok"; status.textContent = "Imagem enviada! Toque em “Salvar alterações”.";
+        } else throw new Error(r.message || "Erro desconhecido");
+      } catch (err) {
+        console.error(err);
+        $("previewImg").src = anterior;
+        status.className = "upload-status err"; status.textContent = "Falha no envio: " + (err.message || "tente novamente.");
+      }
+      $("btnUpload").disabled = false;
+      input.value = "";
+    }
+
+    function clicarBotaoRecados() { ehAdmin() ? abrirModalVerRecados() : mostrar("modalRecado"); }
+    function fecharModalRecado() { esconder("modalRecado"); $("txtRecado").value = ""; }
+
+    async function enviarRecado() {
+      const texto = $("txtRecado").value.trim();
+      if (!texto || enviando) return;
+      enviando = true; $("btnEnviarRecado").textContent = "Enviando…";
+      try {
+        const r = await api({ action: "recado", texto, nome: usuarioAtivo });
+        if (r.status === "success") {
+          fecharModalRecado();
+          $("successMsg").textContent = "Seu recado foi enviado com sucesso! 💌"; mostrar("customSuccess");
+        } else toast(r.message || "Erro ao enviar.", "err");
+      } catch (e) { toast("Erro de conexão ao enviar.", "err"); }
+      enviando = false; $("btnEnviarRecado").textContent = "Enviar recado";
+    }
+
+    function abrirModalVerRecados() {
+      const box = $("listaRecadosAdmin");
+      box.innerHTML = `<p class="sub">Carregando recados…</p>`; $("recadosSub").textContent = "";
+      mostrar("modalVerRecados");
+      fetch(`${URL_API}?action=getRecados`).then(r => r.json()).then(rec => {
+        if (Array.isArray(rec) && rec.length) {
+          $("recadosSub").textContent = rec.length + (rec.length === 1 ? " mensagem" : " mensagens");
+          box.innerHTML = rec.map(r => `
+            <div class="recado">
+              <div class="recado-head"><span><i class="fas fa-user"></i> ${esc(r.nome)}</span><span>${esc(r.data)}</span></div>
+              <div class="recado-body">${esc(r.recado)}</div>
+            </div>`).join("");
+        } else box.innerHTML = `<p class="sub">Nenhum recado ainda.</p>`;
+      }).catch(() => { box.innerHTML = `<p class="sub" style="color:#FCA5A5">Erro ao carregar recados.</p>`; });
+    }
+    function fecharModalVerRecados() { esconder("modalVerRecados"); }
