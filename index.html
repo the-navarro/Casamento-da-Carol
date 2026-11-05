@@ -2,268 +2,243 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0B1F3F">
   <title>Casamento Carol & Marlon</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css">
+  
+  <!-- Estilo importado para uso no GitHub/Apps Script -->
+  <?!= HtmlService.createHtmlOutputFromFile('style').getContent(); ?>
 </head>
 <body>
 
-  <header class="fixed-header">
-    <div style="display: flex; align-items: center; gap: 5px;">
-      <span class="header-title">Carol & Marlon</span>
+  <!-- LOGIN -->
+  <div id="login" class="screen">
+    <div class="login-box">
+      <div class="monogram">C&amp;M</div>
+      <h1>Carol &amp; Marlon</h1>
+      <div class="login-phrase">O nosso sonho começa com a sua presença.</div>
+
+      <div class="field">
+        <label for="nomeUser">Como podemos te chamar?</label>
+        <input type="text" id="nomeUser" class="input" placeholder="Seu nome" autocomplete="name">
+      </div>
+
+      <div id="grupoSenha" class="field hidden">
+        <label for="senhaAcesso">Senha de acesso</label>
+        <input type="password" id="senhaAcesso" class="input" placeholder="Digite sua senha">
+      </div>
+
+      <button type="button" class="btn-primary" id="btnEntrar" onclick="tentarEntrar()">Ver presentes</button>
+      <button type="button" class="link-admin" id="btnToggleAdmin" onclick="alternarAreaAdmin()">Sou os noivos / administração</button>
     </div>
-    <div class="header-actions">
-      <button id="btnAdicionarHeader" class="btn-admin-top hidden" onclick="abrirTelaEdicao()">
-        <i class="fas fa-plus"></i> Novo Item
-      </button>
-      <button id="btnRecadoHeader" class="btn-recado-top hidden" onclick="clicarBotaoRecados()">
-        <i id="iconeBotaoRecado" class="fas fa-envelope"></i> <span id="textoBotaoRecado">Recado</span>
-      </button>
+  </div>
+
+  <div id="loadingScreen" class="screen hidden">
+    <div style="text-align:center">
+      <div class="spinner"></div>
+      <h2 style="font-family:'Playfair Display',serif;font-weight:500;margin:0 0 8px">Preparando tudo…</h2>
+      <p style="font-size:.85rem;color:#CBD5E1;margin:0">Carregando os presentes com carinho para você.</p>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <header class="hero hidden" id="topbar">
+    <div class="hero-inner">
+      <div class="hero-mono">C&amp;M</div>
+      <div class="brand">Carol &amp; Marlon</div>
+      <div class="hero-kicker">Lista de presentes</div>
+      <div class="hero-line"><span></span><i class="fas fa-heart"></i><span></span></div>
+      <p class="hero-phrase">Cada presente é um gesto de carinho para o nosso novo lar.</p>
+      <div class="hero-hello" id="saudacao">Olá!</div>
     </div>
   </header>
 
-  <div id="priceBar" class="price-filter-bar hidden">
-    <select id="sortOrder" onchange="aplicarFiltros()">
-      <option value="none">Ordenar...</option>
-      <option value="asc">Menor Preço</option>
-      <option value="desc">Maior Preço</option>
-    </select>
-    
-    <select id="rangePrice" onchange="aplicarFiltros()">
-      <option value="all">Valores</option>
-      <option value="10-20">R$ 10 - R$ 20</option>
-      <option value="20-30">R$ 20 - R$ 30</option>
-      <option value="30-40">R$ 30 - R$ 40</option>
-      <option value="40-50">R$ 40 - R$ 50</option>
-      <option value="50-100">R$ 50 - R$ 100</option>
-    </select>
+  <div class="mini-bar hidden" id="miniBar"><div class="mini-mono">C&amp;M</div><div class="mini-name">Carol &amp; Marlon</div></div>
 
-    <select id="filtroStatusProduto" class="hidden" onchange="aplicarFiltros()">
-      <option value="all">Status Produto</option>
-      <option value="Ativo">Ativo</option>
-      <option value="Esgotado">Esgotado</option>
-      <option value="Inválido">Inválido</option>
-      <option value="Retirado">Retirado</option>
-    </select>
-  </div>
-
-  <!-- TELA DE LOGIN -->
-  <div id="login" class="login-wrapper">
-    <div class="login-box">
-      <h1>Carol & Marlon</h1>
-      <div class="login-phrase">O nosso sonho começa com a sua presença.</div>
-      
-      <div class="login-input-group">
-        <label>Como podemos te chamar?</label>
-        <input type="text" id="nomeUser" placeholder="Seu nome">
-      </div>
-
-      <div class="login-input-group">
-        <label>Tipo de Acesso</label>
-        <select id="tipoAcesso" onchange="verificarTipoAcesso()">
-          <option value="convidado">Convidado</option>
-          <option value="noiva">Noiva</option>
-          <option value="noivo">Noivo</option>
-          <option value="adm">Adm</option>
+  <main id="lista" class="hidden">
+    <section class="controls">
+      <div class="search"><i class="fas fa-search"></i><input type="search" id="busca" placeholder="Buscar presente…" oninput="aplicarFiltros()"></div>
+      <div class="filters-row">
+        <select id="sortOrder" class="select-pill" onchange="aplicarFiltros()">
+          <option value="none">Ordenar</option>
+          <option value="asc">Menor preço</option>
+          <option value="desc">Maior preço</option>
         </select>
-      </div>
-
-      <div id="grupoSenha" class="login-input-group hidden">
-        <label>Senha de Acesso</label>
-        <input type="password" id="senhaAcesso" placeholder="Digite sua senha">
-      </div>
-
-      <button type="button" class="btn-login-small" onclick="tentarEntrar()">Ver Presentes</button>
-    </div>
-  </div>
-
-  <!-- TELA DE CARREGAMENTO -->
-  <div id="loadingScreen" class="login-wrapper hidden">
-    <div class="login-box" style="text-align: center;">
-      <div class="loading-spinner"></div>
-      <h2 style="font-family: 'Playfair Display', serif; margin: 0 0 10px 0; color: #fff;">Preparando tudo...</h2>
-      <p style="font-size: 0.85rem; opacity: 0.8; margin: 0; color: #cbd5e1;">Carregando os presentes com carinho para você.</p>
-    </div>
-  </div>
-
-  <div id="lista" class="hidden container">
-    <div id="grid" class="grid"></div>
-  </div>
-
-  <footer class="fixed-footer hidden" id="mainFooter">
-    <div class="nav-item active" onclick="filtrar('Todos', this)"><i class="fas fa-th-large"></i><span>Todos</span></div>
-    <div class="nav-item" onclick="filtrar('Cozinha', this)"><i class="fas fa-utensils"></i><span>Cozinha</span></div>
-    <div class="nav-item" onclick="filtrar('Quarto', this)"><i class="fas fa-bed"></i><span>Quarto</span></div>
-    <div class="nav-item" onclick="filtrar('Banheiro', this)"><i class="fas fa-bath"></i><span>Banheiro</span></div>
-    <div class="nav-item" onclick="filtrar('Limpeza', this)"><i class="fas fa-broom"></i><span>Limpeza</span></div>
-  </footer>
-
-  <!-- TELA DE EDIÇÃO COMPLETA -->
-  <div id="telaEdicaoCompleta" class="fullscreen-editor hidden">
-    <div class="editor-container">
-      
-      <div class="editor-header-sticky">
-        <img id="previewImg" src="https://via.placeholder.com/150?text=Sem+Foto" class="editor-preview-img" title="Clique para ampliar" onclick="ampliarFoto()" onerror="this.src='https://via.placeholder.com/150?text=Erro+Foto'">
-        <span style="font-size: 0.6rem; color: #cbd5e1; margin-top: 2px; display: block;"><i class="fas fa-search-plus"></i> Ampliar foto</span>
-      </div>
-
-      <h3 id="editorTitulo" style="font-family:'Playfair Display'; margin-top:0; text-align: center; font-size: 1rem; margin-bottom: 8px;">Adicionar Item</h3>
-      
-      <div id="seletorEdicaoContainer" class="selector-box">
-        <p><i class="fas fa-check-square"></i> O que deseja editar?</p>
-        <div class="checkbox-grid">
-          <label class="checkbox-label"><input type="checkbox" value="bloco-item" onchange="alternarCampoEdicao(this)"> Nome Completo</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-nome" onchange="alternarCampoEdicao(this)"> Nome Resumido</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-link" onchange="alternarCampoEdicao(this)"> Link Shopee</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-categoria" onchange="alternarCampoEdicao(this)"> Categoria</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-imagem" onchange="alternarCampoEdicao(this)"> Imagem</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-preco" onchange="alternarCampoEdicao(this)"> Preços</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-status" onchange="alternarCampoEdicao(this)"> Status</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-escolhido" onchange="alternarCampoEdicao(this)"> Convidado</label>
-          <label class="checkbox-label"><input type="checkbox" value="bloco-prodstatus" onchange="alternarCampoEdicao(this)"> Status Produto</label>
-        </div>
-      </div>
-
-      <input type="hidden" id="formIndex">
-      <input type="hidden" id="formImagemUrl">
-
-      <div id="bloco-item" class="modal-form-group campo-editavel">
-        <label><i class="fas fa-tag"></i> Nome completo do item</label>
-        <input type="text" id="formItem" placeholder="Nome completo na Shopee">
-      </div>
-
-      <div id="bloco-nome" class="modal-form-group campo-editavel">
-        <label><i class="fas fa-font"></i> Nome resumido</label>
-        <input type="text" id="formNome" placeholder="Nome para os convidados">
-      </div>
-
-      <div id="bloco-link" class="modal-form-group campo-editavel">
-        <label><i class="fas fa-link"></i> Link</label>
-        <input type="text" id="formLink" placeholder="https://shopee.com.br/...">
-      </div>
-
-      <div id="bloco-categoria" class="modal-form-group campo-editavel">
-        <label><i class="fas fa-folder"></i> Categoria</label>
-        <select id="formCategoria">
-          <option value="Cozinha">Cozinha</option>
-          <option value="Quarto">Quarto</option>
-          <option value="Banheiro">Banheiro</option>
-          <option value="Limpeza">Limpeza</option>
+        <select id="rangePrice" class="select-pill" onchange="aplicarFiltros()">
+          <option value="all">Todos os valores</option>
+          <option value="0-20">Até R$ 20</option>
+          <option value="20-30">R$ 20 – 30</option>
+          <option value="30-50">R$ 30 – 50</option>
+          <option value="50-100">R$ 50 – 100</option>
+          <option value="100-9999">Acima de R$ 100</option>
         </select>
-      </div>
-
-      <div id="bloco-imagem" class="modal-form-group campo-editavel">
-        <label><i class="fas fa-image"></i> Imagem do Produto</label>
-        <button type="button" class="btn-upload" onclick="document.getElementById('fileUploadInput').click()">
-          <i class="fas fa-cloud-upload-alt"></i> Enviar Imagem (Drive)
-        </button>
-        <input type="file" id="fileUploadInput" accept="image/*" class="hidden" onchange="processarUploadArquivo(this)">
-      </div>
-
-      <div id="bloco-preco" class="campo-editavel">
-        <div class="modal-form-group">
-          <label><i class="fas fa-dollar-sign"></i> Valor mínimo</label>
-          <input type="text" id="formVMin" placeholder="R$ 39,90" oninput="validarValoresPreco()">
-        </div>
-
-        <div class="modal-form-group">
-          <label><i class="fas fa-sliders-h"></i> Tipo de valor</label>
-          <select id="formTipoValor" onchange="toggleValorMaximo()">
-            <option value="Único">Único (Preço fixo)</option>
-            <option value="Faixa de Preço">Faixa de Preço (Variável)</option>
-          </select>
-        </div>
-
-        <div id="grupoValorMax" class="modal-form-group hidden">
-          <label><i class="fas fa-coins"></i> Valor máximo</label>
-          <input type="text" id="formVMax" placeholder="R$ 59,90" oninput="validarValoresPreco()">
-          <span id="avisoValorMax" class="form-warning-text hidden">Atenção: O valor máximo está abaixo do mínimo!</span>
-        </div>
-      </div>
-
-      <div id="bloco-status" class="modal-form-group campo-editavel">
-        <label><i class="fas fa-info-circle"></i> Status</label>
-        <select id="formStatus">
-          <option value="">Disponível</option>
-          <option value="Escolhido">Escolhido</option>
+        <select id="filtroDisp" class="select-pill" onchange="aplicarFiltros()">
+          <option value="all">Todos</option>
+          <option value="livres">Só disponíveis</option>
+          <option value="escolhidos">Já escolhidos</option>
         </select>
-      </div>
-
-      <div id="bloco-escolhido" class="modal-form-group campo-editavel">
-        <label><i class="fas fa-user"></i> Nome do convidado</label>
-        <input type="text" id="formEscolhidoPor" placeholder="Nome do convidado">
-      </div>
-
-      <div id="bloco-prodstatus" class="modal-form-group campo-editavel">
-        <label><i class="fas fa-box"></i> Status do Produto</label>
-        <select id="formStatusProduto">
+        <select id="filtroStatusProduto" class="select-pill hidden" onchange="aplicarFiltros()">
+          <option value="all">Status do produto</option>
           <option value="Ativo">Ativo</option>
           <option value="Esgotado">Esgotado</option>
           <option value="Inválido">Inválido</option>
           <option value="Retirado">Retirado</option>
         </select>
       </div>
+    </section>
+    <div class="result-count" id="contador"></div>
+    <div class="container"><div id="grid" class="grid"></div></div>
+  </main>
 
-      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:12px; padding: 12px; font-weight: 600;" onclick="salvarItemCompleto()">Salvar Alterações</button>
-      <button class="btn-presente" style="background:transparent; border:1px solid white; margin-top: 8px; padding: 10px;" onclick="fecharTelaEdicao()">Cancelar</button>
-    </div>
-  </div>
+  <button class="fab hidden" id="btnAdicionarHeader" onclick="abrirTelaEdicao()" aria-label="Novo item"><i class="fas fa-plus"></i></button>
 
-  <!-- MODAL DE ZOOM DA FOTO -->
-  <div id="modalZoomFoto" class="custom-modal-overlay hidden" onclick="fecharZoomFoto()">
-    <div class="zoom-img-modal">
-      <img id="imgZoomAmpliada" src="" alt="Foto Ampliada">
-    </div>
-  </div>
+  <nav class="bottom-nav hidden" id="mainFooter">
+    <button class="nav-item active" data-cat="Todos"><i class="fas fa-th-large"></i><span>Todos</span></button>
+    <button class="nav-item" data-cat="Cozinha"><i class="fas fa-utensils"></i><span>Cozinha</span></button>
+    <button class="nav-item" data-cat="Quarto"><i class="fas fa-bed"></i><span>Quarto</span></button>
+    <button class="nav-item" data-cat="Banheiro"><i class="fas fa-bath"></i><span>Banheiro</span></button>
+    <button class="nav-item" data-cat="Limpeza"><i class="fas fa-broom"></i><span>Limpeza</span></button>
+    <button class="nav-item nav-recado" id="navRecado" onclick="clicarBotaoRecados()"><i id="iconeBotaoRecado" class="fas fa-envelope"></i><span id="textoBotaoRecado">Recado</span></button>
+  </nav>
 
-<!-- MODAL RECADO (CONVIDADO) -->
-<div id="modalRecado" class="custom-modal-overlay hidden">
-  <div class="custom-modal-box">
-    <h3 style="font-family: 'Playfair Display', serif; margin-top: 0; color: #FFFFFF;">Deixe seu recado aos noivos</h3>
-    <div class="modal-form-group">
-      <label for="txtRecado"><i class="fas fa-heart"></i> Mensagem:</label>
-      <textarea id="txtRecado" rows="5" placeholder="Escreva aqui seu carinho e mensagem para o casal..." class="textarea-recado"></textarea>
-    </div>
-    <div style="display: flex; gap: 10px; margin-top: 15px;">
-      <button class="btn-presente" style="background: rgba(255,255,255,0.15); width: 50%;" onclick="fecharModalRecado()">Cancelar</button>
-      <button class="btn-presente" style="width: 50%;" onclick="enviarRecado()">Enviar Recado</button>
-    </div>
-  </div>
-</div>
-
-  <!-- MODAL DE VER RECADOS PARA ADMS / NOIVOS -->
-  <div id="modalVerRecados" class="custom-modal-overlay hidden">
-    <div class="custom-modal-box" style="max-width: 450px;">
-      <h3 style="font-family:'Playfair Display'; margin-top:0;"><i class="fas fa-envelope-open-text"></i> Recados dos Convidados</h3>
-      <div id="listaRecadosAdmin" class="recados-list">
-        <p style="text-align: center; color: #cbd5e1; font-size: 0.8rem;">Carregando recados...</p>
+  <!-- EDITOR -->
+  <div id="telaEdicaoCompleta" class="overlay hidden">
+    <div class="sheet">
+      <button type="button" class="sheet-close" aria-label="Fechar" onclick="fecharOverlay(this)"><i class="fas fa-times"></i></button>
+      <div class="sheet-body">
+      <div class="preview-box">
+        <img id="previewImg" alt="Prévia" onclick="ampliarFoto()">
       </div>
-      <button class="btn-presente" style="background:white; color:var(--navy); margin-top:10px; padding: 12px;" onclick="fecharModalVerRecados()">Fechar</button>
+      <h3 id="editorTitulo">Adicionar item</h3>
+      <p class="sub" id="editorSub"></p>
+
+      <div id="seletorEdicaoContainer" class="selector">
+        <p><i class="fas fa-check-square"></i> O que deseja editar?</p>
+        <div class="check-grid">
+          <label class="check-chip"><input type="checkbox" value="bloco-item" onchange="alternarCampoEdicao(this)"><span>Nome completo</span></label>
+          <label class="check-chip"><input type="checkbox" value="bloco-nome" onchange="alternarCampoEdicao(this)"><span>Nome resumido</span></label>
+          <label class="check-chip"><input type="checkbox" value="bloco-link" onchange="alternarCampoEdicao(this)"><span>Link</span></label>
+          <label class="check-chip"><input type="checkbox" value="bloco-categoria" onchange="alternarCampoEdicao(this)"><span>Categoria</span></label>
+          <label class="check-chip"><input type="checkbox" value="bloco-imagem" onchange="alternarCampoEdicao(this)"><span>Imagem</span></label>
+          <label class="check-chip"><input type="checkbox" value="bloco-preco" onchange="alternarCampoEdicao(this)"><span>Preços</span></label>
+          <label class="check-chip"><input type="checkbox" value="bloco-status" onchange="alternarCampoEdicao(this)"><span>Status</span></label>
+          <label class="check-chip"><input type="checkbox" value="bloco-escolhido" onchange="alternarCampoEdicao(this)"><span>Convidado</span></label>
+          <label class="check-chip"><input type="checkbox" value="bloco-prodstatus" onchange="alternarCampoEdicao(this)"><span>Status produto</span></label>
+        </div>
+      </div>
+
+      <input type="hidden" id="formIndex">
+      <input type="hidden" id="formImagemUrl">
+
+      <div id="bloco-item" class="form-group campo-editavel"><label><i class="fas fa-tag"></i> Nome completo do item</label>
+        <input type="text" id="formItem" class="input" placeholder="Nome completo na Shopee"></div>
+      <div id="bloco-nome" class="form-group campo-editavel"><label><i class="fas fa-font"></i> Nome resumido</label>
+        <input type="text" id="formNome" class="input" placeholder="Nome para os convidados"></div>
+      <div id="bloco-link" class="form-group campo-editavel"><label><i class="fas fa-link"></i> Link</label>
+        <input type="url" id="formLink" class="input" placeholder="https://shopee.com.br/..."></div>
+      <div id="bloco-categoria" class="form-group campo-editavel"><label><i class="fas fa-folder"></i> Categoria</label>
+        <select id="formCategoria" class="input">
+          <option value="Cozinha">Cozinha</option><option value="Quarto">Quarto</option>
+          <option value="Banheiro">Banheiro</option><option value="Limpeza">Limpeza</option>
+        </select></div>
+
+      <div id="bloco-imagem" class="form-group campo-editavel">
+        <label><i class="fas fa-image"></i> Imagem do produto</label>
+        <button type="button" class="upload-btn" id="btnUpload" onclick="document.getElementById('fileUploadInput').click()">
+          <i class="fas fa-cloud-upload-alt"></i> Escolher foto (galeria ou câmera)
+        </button>
+        <input type="file" id="fileUploadInput" accept="image/*" class="hidden" onchange="processarUploadArquivo(this)">
+        <div id="uploadStatus" class="upload-status"></div>
+      </div>
+
+      <div id="bloco-preco" class="campo-editavel">
+        <div class="form-group"><label><i class="fas fa-dollar-sign"></i> Valor mínimo</label>
+          <input type="text" id="formVMin" class="input" inputmode="decimal" placeholder="39,90" oninput="validarValoresPreco()"></div>
+        <div class="form-group"><label><i class="fas fa-sliders-h"></i> Tipo de valor</label>
+          <select id="formTipoValor" class="input" onchange="toggleValorMaximo()">
+            <option value="Único">Único (preço fixo)</option>
+            <option value="Faixa de Preço">Faixa de preço (variável)</option>
+          </select></div>
+        <div id="grupoValorMax" class="form-group hidden"><label><i class="fas fa-coins"></i> Valor máximo</label>
+          <input type="text" id="formVMax" class="input" inputmode="decimal" placeholder="59,90" oninput="validarValoresPreco()">
+          <span id="avisoValorMax" class="warn hidden">Atenção: o valor máximo está abaixo do mínimo.</span></div>
+      </div>
+
+      <div id="bloco-status" class="form-group campo-editavel"><label><i class="fas fa-info-circle"></i> Status</label>
+        <select id="formStatus" class="input"><option value="">Disponível</option><option value="Escolhido">Escolhido</option></select></div>
+      <div id="bloco-escolhido" class="form-group campo-editavel"><label><i class="fas fa-user"></i> Nome do convidado</label>
+        <input type="text" id="formEscolhidoPor" class="input" placeholder="Nome do convidado"></div>
+      <div id="bloco-prodstatus" class="form-group campo-editavel"><label><i class="fas fa-box"></i> Status do produto</label>
+        <select id="formStatusProduto" class="input">
+          <option value="Ativo">Ativo</option><option value="Esgotado">Esgotado</option>
+          <option value="Inválido">Inválido</option><option value="Retirado">Retirado</option>
+        </select></div>
+
+      <button class="btn btn-white" id="btnSalvarItem" onclick="salvarItemCompleto()">Salvar alterações</button>
+      <button class="btn btn-light" onclick="fecharTelaEdicao()">Cancelar</button>
+      </div>
     </div>
   </div>
 
-  <!-- MODAL DE CONFIRMAÇÃO DE ESCOLHA -->
-  <div id="customConfirm" class="custom-modal-overlay hidden">
-    <div class="custom-modal-box">
-      <h3 style="font-family:'Playfair Display'">Confirmar Escolha?</h3>
-      <p id="confirmText" style="font-size:0.85rem; opacity:0.8; margin-bottom:25px;"></p>
-      <button class="btn-presente" style="background:white; color:var(--navy); margin-bottom:10px; padding: 12px;" onclick="confirmarAcao()">Sim, Escolher</button>
-      <button class="btn-presente" style="background:transparent; border:1px solid white; padding: 12px;" onclick="fecharModal()">Cancelar</button>
+  <div id="modalZoomFoto" class="overlay zoom hidden" onclick="fecharZoomFoto()"><img id="imgZoomAmpliada" alt="Foto ampliada"></div>
+
+  <div id="modalRecado" class="overlay hidden">
+    <div class="sheet">
+      <button type="button" class="sheet-close" aria-label="Fechar" onclick="fecharOverlay(this)"><i class="fas fa-times"></i></button>
+      <div class="sheet-body">
+      <div class="ico-big"><i class="fas fa-heart"></i></div>
+      <h3>Deixe seu recado aos noivos</h3>
+      <p class="sub">Uma mensagem de carinho para guardarem para sempre.</p>
+      <div class="form-group"><textarea id="txtRecado" class="input" placeholder="Escreva aqui seu carinho e mensagem para o casal…" maxlength="800"></textarea></div>
+      <button class="btn btn-white" id="btnEnviarRecado" onclick="enviarRecado()">Enviar recado</button>
+      <button class="btn btn-light" onclick="fecharModalRecado()">Cancelar</button>
+      </div>
     </div>
   </div>
 
-  <!-- MODAL DE SUCESSO -->
-  <div id="customSuccess" class="custom-modal-overlay hidden">
-    <div class="custom-modal-box">
-      <i class="fas fa-check-circle" style="font-size:3rem; color:var(--accent); margin-bottom:15px;"></i>
-      <h3 style="font-family:'Playfair Display'">Muito Obrigado!</h3>
-      <p id="successMsg" style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 20px;">Sua escolha foi registrada com sucesso.</p>
-      <button class="btn-presente" style="background:white; color:var(--navy); padding: 12px;" onclick="fecharSucesso()">Fechar</button>
+  <div id="modalVerRecados" class="overlay hidden">
+    <div class="sheet">
+      <button type="button" class="sheet-close" aria-label="Fechar" onclick="fecharOverlay(this)"><i class="fas fa-times"></i></button>
+      <div class="sheet-body">
+      <h3><i class="fas fa-envelope-open-text" style="color:var(--accent)"></i> Recados dos convidados</h3>
+      <p class="sub" id="recadosSub"></p>
+      <div id="listaRecadosAdmin" class="recados-list"></div>
+      <button class="btn btn-white" onclick="fecharModalVerRecados()">Fechar</button>
+      </div>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <div id="customConfirm" class="overlay hidden">
+    <div class="sheet">
+      <button type="button" class="sheet-close" aria-label="Fechar" onclick="fecharOverlay(this)"><i class="fas fa-times"></i></button>
+      <div class="sheet-body">
+      <div class="ico-big"><i class="fas fa-gift"></i></div>
+      <h3 id="confirmTitulo">Confirmar escolha?</h3>
+      <p class="sub" id="confirmText"></p>
+      <button class="btn btn-white" id="btnConfirmar" onclick="confirmarAcao()">Sim, confirmar</button>
+      <button class="btn btn-light" onclick="fecharModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="customSuccess" class="overlay hidden">
+    <div class="sheet">
+      <button type="button" class="sheet-close" aria-label="Fechar" onclick="fecharOverlay(this)"><i class="fas fa-times"></i></button>
+      <div class="sheet-body">
+      <div class="ico-big"><i class="fas fa-check"></i></div>
+      <h3>Muito obrigado!</h3>
+      <p class="sub" id="successMsg">Sua escolha foi registrada com sucesso.</p>
+      <button class="btn btn-white" onclick="fecharSucesso()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toasts"></div>
+
+  <!-- Script importado para uso no GitHub/Apps Script -->
+  <?!= HtmlService.createHtmlOutputFromFile('script').getContent(); ?>
 </body>
 </html>
