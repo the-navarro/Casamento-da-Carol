@@ -161,13 +161,8 @@ function converterLinkDrive(link) {
 /* ===================== UTILITÁRIOS ===================== */
 
 function responderJSON(obj) {
-  return HtmlService.createHtmlOutput(JSON.stringify(obj)) // Alternativa compatível para injetar headers no Apps Script
-  // Ou mantendo o ContentService com cabeçalho explícito:
-  var output = ContentService.createTextOutput(JSON.stringify(obj));
-  output.setMimeType(ContentService.MimeType.JSON);
-  
-  // Força a liberação do CORS para o seu GitHub Pages aceitar os dados
-  return output;
+  return HtmlService.createHtmlOutput(JSON.stringify(obj))
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 function limpar(t) {
   if (t === null || t === undefined) return '';
