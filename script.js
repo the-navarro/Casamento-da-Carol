@@ -37,8 +37,7 @@ const URL_API = "https://script.google.com/macros/s/AKfycbyKwAWJUc0UKS_-7LOkkna9
     function esconder(id) { $(id).classList.add("hidden"); }
 
     async function api(corpo) {
-      // Usamos ?payload= para enviar os dados via GET disfarçado de POST, 
-      // o que evita totalmente o bloqueio rígido de CORS dos navegadores no Google Apps Script.
+      // Envia os dados de forma inteligente via GET utilizando o parâmetro payload
       const urlComParametro = `${URL_API}?payload=` + encodeURIComponent(JSON.stringify(corpo));
       const res = await fetch(urlComParametro, { method: "GET" });
       return res.json();
