@@ -37,10 +37,12 @@ const URL_API = "https://script.google.com/macros/s/AKfycbyKwAWJUc0UKS_-7LOkkna9
     function esconder(id) { $(id).classList.add("hidden"); }
 
     async function api(corpo) {
-      const res = await fetch(URL_API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(corpo) });
+      // Usamos ?payload= para enviar os dados via GET disfarçado de POST, 
+      // o que evita totalmente o bloqueio rígido de CORS dos navegadores no Google Apps Script.
+      const urlComParametro = `${URL_API}?payload=` + encodeURIComponent(JSON.stringify(corpo));
+      const res = await fetch(urlComParametro, { method: "GET" });
       return res.json();
     }
-
     /* ---------- dados ---------- */
     function carregarDadosServidor(callback) {
       return fetch(`${URL_API}?action=getPresentes`)
@@ -49,7 +51,6 @@ const URL_API = "https://script.google.com/macros/s/AKfycbyKwAWJUc0UKS_-7LOkkna9
         .catch(err => { console.error("Erro ao carregar dados:", err); listaGlobal = []; toast("Não foi possível carregar os presentes.", "err"); })
         .then(() => { if (callback) callback(); });
     }
-
     /* ---------- fechar modais (X, fundo, Esc) ---------- */
     const FECHADORES = {
       telaEdicaoCompleta: () => esconder("telaEdicaoCompleta"),
