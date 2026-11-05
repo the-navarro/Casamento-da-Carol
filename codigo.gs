@@ -56,14 +56,14 @@ function doPost(e) {
   try {
     const params = JSON.parse(e.postData.contents);
 
-    // Upload de imagem fora do lock
+    // Upload de imagem
     if (params.action === "uploadImagem") {
       const res = salvarImagemNoDrive(params.arquivoBase64, params.nomeArquivo);
       if (res.erro) return responderJSON({ status: "error", message: res.erro });
       return responderJSON({ status: "success", url: res.url });
     }
 
-    // Demais ações na planilha usam lock de segurança
+    // Demais ações na planilha
     const lock = LockService.getScriptLock();
     lock.waitLock(20000);
     try {
