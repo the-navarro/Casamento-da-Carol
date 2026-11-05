@@ -161,11 +161,14 @@ function converterLinkDrive(link) {
 /* ===================== UTILITÁRIOS ===================== */
 
 function responderJSON(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader("Access-Control-Allow-Origin", "*"); // Libera requisições vindas do GitHub Pages
+  return HtmlService.createHtmlOutput(JSON.stringify(obj)) // Alternativa compatível para injetar headers no Apps Script
+  // Ou mantendo o ContentService com cabeçalho explícito:
+  var output = ContentService.createTextOutput(JSON.stringify(obj));
+  output.setMimeType(ContentService.MimeType.JSON);
+  
+  // Força a liberação do CORS para o seu GitHub Pages aceitar os dados
+  return output;
 }
-
 function limpar(t) {
   if (t === null || t === undefined) return '';
   let s = String(t).trim().slice(0, 1000);
