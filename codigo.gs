@@ -20,20 +20,32 @@ function doGet(e) {
   const acao = e && e.parameter ? e.parameter.action : null;
   const payloadStr = e && e.parameter && e.parameter.payload ? e.parameter.payload : null;
 
+  // Se houver um payload, processa a ação (como escolher, desfazer, adicionar, atualizar, excluir ou uploadImagem)
   if (payloadStr) {
     try {
       const params = JSON.parse(payloadStr);
+
+      // Upload de imagem
       if (params.action === "uploadImagem") {
         const res = salvarImagemNoDrive(params.arquivoBase64, params.nomeArquivo);
         if (res.erro) return responderJSON({ status: "error", message: res.erro });
         return responderJSON({ status: "success", url: res.url });
       }
-      return responderJSON(tratarAcao(params));
+
+      // Demais ações na planilha com bloqueio de segurança (lock)
+      const lock = LockService.getScriptLock();
+      lock.waitLock(20000);
+      try {
+        return responderJSON(tratarAcao(params));
+      } finally {
+        lock.releaseLock();
+      }
     } catch(err) {
       return responderJSON({ status: "error", message: err.toString() });
     }
   }
 
+  // Leituras tradicionais
   if (acao === "getPresentes") return responderJSON(getPresentes());
   if (acao === "getRecados") return responderJSON(getRecados());
 
