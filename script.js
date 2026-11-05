@@ -37,9 +37,13 @@ const URL_API = "https://script.google.com/macros/s/AKfycbyKwAWJUc0UKS_-7LOkkna9
     function esconder(id) { $(id).classList.add("hidden"); }
 
     async function api(corpo) {
-      // Envia os dados de forma inteligente via GET utilizando o parâmetro payload
-      const urlComParametro = `${URL_API}?payload=` + encodeURIComponent(JSON.stringify(corpo));
-      const res = await fetch(urlComParametro, { method: "GET" });
+      // Como o envio de imagem (Base64) gera dados grandes, usamos POST com text/plain 
+      // para evitar o pré-voo (preflight) de CORS do navegador.
+      const res = await fetch(URL_API, { 
+        method: "POST", 
+        headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+        body: JSON.stringify(corpo) 
+      });
       return res.json();
     }
     /* ---------- dados ---------- */
