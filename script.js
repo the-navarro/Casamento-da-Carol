@@ -1,4 +1,4 @@
-const URL_API = "https://script.google.com/macros/s/AKfycbyaORFvDT1v-l9hfld8qWR6FuRBJzHasJvUKMSl0b4Dish-gbkvyjuVXtMVPXNDxtlB/exec";
+const URL_API = "https://script.google.com/macros/s/AKfycbyKwAWJUc0UKS_-7LOkkna9GJXy0V75hy1tnkrjx43pNMkbZ17u2RlFqbE7_6RU_1zz/exec";
     const SENHA_ADM = "123456";
     const PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent(
       "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><rect width='300' height='300' fill='#ECE8E1'/>" +
