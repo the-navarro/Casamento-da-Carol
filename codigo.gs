@@ -18,11 +18,26 @@ function autorizarAplicacao() {
 
 function doGet(e) {
   const acao = e && e.parameter ? e.parameter.action : null;
+  const payloadStr = e && e.parameter && e.parameter.payload ? e.parameter.payload : null;
+
+  if (payloadStr) {
+    try {
+      const params = JSON.parse(payloadStr);
+      if (params.action === "uploadImagem") {
+        const res = salvarImagemNoDrive(params.arquivoBase64, params.nomeArquivo);
+        if (res.erro) return responderJSON({ status: "error", message: res.erro });
+        return responderJSON({ status: "success", url: res.url });
+      }
+      return responderJSON(tratarAcao(params));
+    } catch(err) {
+      return responderJSON({ status: "error", message: err.toString() });
+    }
+  }
+
   if (acao === "getPresentes") return responderJSON(getPresentes());
   if (acao === "getRecados") return responderJSON(getRecados());
 
-  // Mensagem padrão caso acessem o link da Web App diretamente no navegador
-  return responderJSON({ status: "online", mensagem: "API do Casamento Carol & Marlon funcionando!" });
+  return responderJSON({ status: "online" });
 }
 
 function doPost(e) {
